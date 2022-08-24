@@ -20,24 +20,19 @@ Tokio是Rust编程语言中的一个异步运行时框架。它提供了编写�
 此外，Tokio库也提供很多有用的工具类。在编程异步程序时，你没法使用标准库提供的阻塞时API，Tokio库正好提供了相应的替代，
 也就是标准库的镜像版本，这很有意义。
 
-# Advantages of Tokio
+# Tokio的优点
 
-This section will outline some advantages of Tokio.
+本节概述下Tokio的一些优势。
 
-## Fast
+## 执行快
 
-Tokio is _fast_, built on top of the Rust programming language, which itself is
-fast. This is done in the spirit of Rust with the goal that you should not be
-able to improve the performance by writing equivalent code by hand.
+Tokio的快，是因基于本身就执行快Rust语言构建。通过利用语言内嵌特性获得的执行效率很难通过重写带宽获得。
 
-Tokio is _scalable_, built on top of the async/await language feature, which
-itself is scalable. When dealing with networking, there's a limit to how fast
-you can handle a connection due to latency, so the only way to scale is to
-handle many connections at once. With the async/await language feature,
-increasing the number of concurrent operations becomes incredibly cheap,
-allowing you to scale to a large number of concurrent tasks.
+Tokio的可扩展, 是基于语言的async/await可扩展特性。当处理网络IO时, 处理一个连接的速度取决于延迟，
+you can handle a connection due to latency, 所以提升效率唯一的方式就同时处理很多连接。
+通过async/await特性，增加网络并发操作的代价很低，可以让你执行大量的并发任务。
 
-## Reliable
+## 可靠
 
 Tokio is built using Rust, which is a language that empowers everyone
 to build reliable and efficient software. A [number][microsoft] of
@@ -53,7 +48,7 @@ unpredictable latency spikes.
 [microsoft]: https://www.zdnet.com/article/microsoft-70-percent-of-all-security-bugs-are-memory-safety-issues/
 [chrome]: https://www.chromium.org/Home/chromium-security/memory-safety
 
-## Easy
+## 简单
 
 With Rust's async/await feature, the complexity of writing asynchronous
 applications has been lowered substantially. Paired with Tokio's utilities and
@@ -64,7 +59,7 @@ allows easily converting code written with only the standard library to code
 written with Tokio. With the strong type system of Rust, the ability to deliver
 correct code easily is unparalleled.
 
-## Flexible
+## 灵活性
 
 Tokio provides multiple variations of the runtime. Everything from a
 multi-threaded, [work-stealing] runtime to a light-weight, single-threaded
