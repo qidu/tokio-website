@@ -8,9 +8,17 @@ async fn main() -> io::Result<()> {
     loop {
         let (mut socket, _) = listener.accept().await?;
 
-        tokio::spawn(async move {
-            let mut buf = vec![0; 1024];
 
+        tokio::spawn(async move {
+            let (mut rd, mut wr) = socket.split();
+            loop {
+                if io::copy(&mut rd, &mut wr).await.is_err() {
+                    eprintln!("failed to copy");
+                    break;
+                }
+            }
+
+/*            let mut buf = vec![0; 1024];
             loop {
                 match socket.read(&mut buf).await {
                     // Return value of `Ok(0)` signifies that the remote has
@@ -30,7 +38,7 @@ async fn main() -> io::Result<()> {
                         return;
                     }
                 }
-            }
+            }*/
         });
     }
 }
