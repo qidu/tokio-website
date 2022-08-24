@@ -11,19 +11,14 @@ Tokio是Rust编程语言中的一个异步运行时框架。它提供了编写�
  - 标准库的一套异步实现.
  - 一个基于编程库的生态.
 
-# Tokio's role in your project
+# Tokio在项目中的角色
 
-When you write your application in an asynchronous manner, you enable it to
-scale much better by reducing the cost of doing many things at the same time.
-However, asynchronous Rust code does not run on its own, so you must choose a
-runtime to execute it. The Tokio library is the most widely used runtime,
-surpassing all other runtimes in usage combined.
+当用异步的方式编写应用程序时，你可以让它通过同时执行很多任务的方式获得扩展性和降低成本。
+但Rust代码自身并没有异步环境, 需要你来选择一个运行时执行它们。Tokio库就是被最广泛使用的运行时,
+远超其他同类库.
 
-Additionally, Tokio provides many useful utilities. When writing asynchronous
-code, you cannot use the ordinary blocking APIs provided by the Rust standard
-library, and must instead use asynchronous versions of them. These alternate
-versions are provided by Tokio, mirroring the API of the Rust standard library
-where it makes sense.
+此外，Tokio库也提供很多有用的工具类。在编程异步程序时，你没法使用标准库提供的阻塞时API，Tokio库正好提供了相应的替代，
+也就是标准库的镜像版本，这很有意义。
 
 # Advantages of Tokio
 
