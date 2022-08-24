@@ -1,18 +1,15 @@
 ---
-title: "Tutorial"
-subtitle: "Overview"
+title: "指南"
+subtitle: "概述"
 ---
 
-Tokio is an asynchronous runtime for the Rust programming language. It provides
-the building blocks needed for writing networking applications. It gives the
-flexibility to target a wide range of systems, from large servers with dozens of
-cores to small embedded devices.
+Tokio是Rust编程语言中的一个异步运行时框架。它提供了编写网络程序的必要组件模块。它具备运行在包括大型多核服务器到小型嵌入式设备等广泛系统环境的灵活性。 
 
-At a high level, Tokio provides a few major components:
+整体看, Tokio提供主要组件包括:
 
- - A multi-threaded runtime for executing asynchronous code.
- - An asynchronous version of the standard library.
- - A large ecosystem of libraries.
+ - 一个执行异步带宽的多线程运行时.
+ - 标准库的一套异步实现.
+ - 一个基于编程库的生态.
 
 # Tokio's role in your project
 
