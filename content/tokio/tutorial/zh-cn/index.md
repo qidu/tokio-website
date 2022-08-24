@@ -56,39 +56,24 @@ Tokio提供了多种形态运行时，包括多线程[工作队列]运行时、�
 
 [work-stealing]: https://en.wikipedia.org/wiki/Work_stealing
 
-# When not to use Tokio
+# 何时不适合用Tokio
 
-Although Tokio is useful for many projects that need to do a lot of things
-simultaneously, there are also some use-cases where Tokio is not a good fit.
+尽管Tokio对很多需要处理大量并发任务的项目有帮助的，仍有很多场景并不适合用它。
 
- - Speeding up CPU-bound computations by running them in parallel on several
-   threads. Tokio is designed for IO-bound applications where each individual
-   task spends most of its time waiting for IO. If the only thing your
-   application does is run computations in parallel, you should be using
-   [rayon]. That said, it is still possible to "mix & match"
-   if you need to do both.
- - Reading a lot of files. Although it seems like Tokio would be useful for
-   projects that simply need to read a lot of files, Tokio provides no advantage
-   here compared to an ordinary threadpool. This is because operating systems
-   generally do not provide asynchronous file APIs.
- - Sending a single web request. The place where Tokio gives you an advantage is
-   when you need to do many things at the same time. If you need to use a
-   library intended for asynchronous Rust such as [reqwest], but you don't need
-   to do a lot of things at once, you should prefer the blocking version of that
-   library, as it will make your project simpler. Using Tokio will still work,
-   of course, but provides no real advantage over the blocking API. If the
-   library doesn't provide a blocking API, see [the chapter on
+ - 通过多线程并行执行来加速CPU密集型任务. 设计Tokio是为I/O密集型任务应用场景加速，每个任务连接花费大量时间在等待I/O操作上。
+　 如果你的应用需要对计算过程进行并行加速，那应用使用[rayon]。如果你同时需要I/O密集型和CPU密集型支持，也有可能进行 "mix & match"使用。
+ - 读取很多文件。虽然Tokio好像对读取很多文件的项目看起来有用，但相比一般线程池并没有优势，因为操作系统一般并没有提供异步文件API。
+ - 发送单个网络请求。ToKio提供的支持是并发多任务，如果你想要异步直接用其他Rust库如[reqwest], 但你并不需要大量并发任务执行，
+ 　采用阻塞版本的库可以让项目结构更简单些。这时用Tokio并没有优势。如果这个库并没有阻塞式API，可以参考这里　[the chapter on
    bridging with sync code][bridging].
 
 [rayon]: https://docs.rs/rayon/
 [reqwest]: https://docs.rs/reqwest/
 [bridging]: /tokio/topics/bridging
 
-# Getting Help
+# 获得帮助
 
-At any point, if you get stuck, you can always get help on [Discord] or [GitHub
-discussions][disc]. Don't worry about asking "beginner" questions. We all start
-somewhere and are happy to help.
+任何时候当你遇到使用困难时可以在 [Discord] 或 [GitHub discussions][disc]　得到支持. 不要担心提出初学者问题，我们很高兴协助。
 
 [discord]: https://discord.gg/tokio
 [disc]: https://github.com/tokio-rs/tokio/discussions
