@@ -44,14 +44,10 @@ Tokio也主要聚焦于提供无意外的一致性的执行行为。它的主要
 
 ## 简单
 
-With Rust's async/await feature, the complexity of writing asynchronous
-applications has been lowered substantially. Paired with Tokio's utilities and
-vibrant ecosystem, writing applications is a breeze.
+依靠Rust的async/await特性, 编写异步程序的难度有了实质性的降低。结合Tokio的功能组件和活跃的生态，编写异步应用也就极为简单了。
 
-Tokio follows the standard library's naming convention when it makes sense. This
-allows easily converting code written with only the standard library to code
-written with Tokio. With the strong type system of Rust, the ability to deliver
-correct code easily is unparalleled.
+Tokio基本尽可能遵从了标准库的命名风格。只依靠标准版写的代码很容易转换为依靠Tokio库。通过Rust强大的类型系统，就无以伦比地降低了
+编写正确代码的难度。 
 
 ## 灵活性
 
