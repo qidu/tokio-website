@@ -2,33 +2,32 @@
 title: "Hello Tokio"
 ---
 
-We will get started by writing a very basic Tokio application. It will connect
-to the Mini-Redis server, set the value of the key `hello` to `world`. It will
-then read back the key. This will be done using the Mini-Redis client library.
+我们将从写一个非常基本的Tokio应用开始。用它连接Mini-Redis服务端，设入<'hello','world'>。
+再读出键值。这里会使用Mini-Redis客户端库。
 
-# The code
+# 代码
 
-## Generate a new crate
+## 创建新crate
 
-Let's start by generating a new Rust app:
+先生成Rust应用:
 
 ```bash
 $ cargo new my-redis
 $ cd my-redis
 ```
 
-## Add dependencies
+## 添加依赖
 
-Next, open `Cargo.toml` and add the following right below `[dependencies]`:
+接着打开 `Cargo.toml` 添加如下内容到 `[dependencies]`:
 
 ```toml
 tokio = { version = "1", features = ["full"] }
 mini-redis = "0.4"
 ```
 
-## Write the code
+## 写代码
 
-Then, open `main.rs` and replace the contents of the file with:
+接着打开 `main.rs` 并替换这个文件的内容成如下:
 
 ```rust
 use mini_redis::{client, Result};
@@ -52,19 +51,19 @@ async fn main() -> Result<()> {
 # }
 ```
 
-Make sure the Mini-Redis server is running. In a separate terminal window, run:
+确认先启动 Mini-Redis 服务端. 在另一个终端窗口执行:
 
 ```bash
 $ mini-redis-server
 ```
 
-If you have not already installed mini-redis, you can do so with
+如果还没有安装 mini-redis, 可用如下命令: 
 
 ```bash
 $ cargo install mini-redis
 ```
 
-Now, run the `my-redis` application:
+现在运行 `my-redis` 应用:
 
 ```bash
 $ cargo run
@@ -73,7 +72,7 @@ got value from the server; result=Some(b"world")
 
 Success!
 
-You can find the full code [here][full].
+完整代码在 [这里][full].
 
 [full]: https://github.com/tokio-rs/website/blob/master/tutorial-code/hello-tokio/src/main.rs
 
