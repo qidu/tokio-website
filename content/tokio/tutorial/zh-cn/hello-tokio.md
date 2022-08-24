@@ -101,24 +101,14 @@ synchronous. The only indication that the operation is asynchronous is the
 
 ## What is asynchronous programming?
 
-Most computer programs are executed in the same order in which they are written.
-The first line executes, then the next, and so on.  With synchronous programming,
-when a program encounters an operation that cannot be completed immediately, it
-will block until the operation completes. For example, establishing a TCP
-connection requires an exchange with a peer over the network, which can take a
-sizeable amount of time. During this time, the thread is blocked.
+大多数电脑程序执行顺序与代码编写顺序相同。执行第一行，然后下一行，直到结束。在同步程序中，当遇到一个操作
+无法立即完成，它将阻塞等待。例如，建立一个TCP连接时需要与网络对端交换信令，这将耗费一些时间，在这段时间里，执行线程将被阻塞住。
 
-With asynchronous programming, operations that cannot complete immediately are
-suspended to the background. The thread is not blocked, and can continue running
-other things. Once the operation completes, the task is unsuspended and continues
-processing from where it left off. Our example from before only has one task, so
-nothing happens while it is suspended, but asynchronous programs typically have
-many such tasks.
+异步编程时, 那些无法立即完成的操作都被挂起暂停在后台，前台线程不会被阻塞，能够继续往下执行。一旦阻塞的操作完成后，任务被唤起，
+继续从原有位置执行。我们的例子中仅有一个任务，所以挂起时没有别的需要执行。异步程序中通常有许多任务并发执行。 
 
-Although asynchronous programming can result in faster applications, it often
-results in much more complicated programs. The programmer is required to track
-all the state necessary to resume work once the asynchronous operation
-completes. Historically, this is a tedious and error-prone task.
+虽然异步编程能够让程序响应更快，它也导致了更复杂的程序结构。程序员需要跟踪所有任务状态以恢复那些完成了的异步操作。 曾经这是
+最容易出错的工作。
 
 ## Compile-time green-threading
 
