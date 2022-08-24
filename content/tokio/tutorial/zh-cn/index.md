@@ -36,10 +36,8 @@ Tokio的可扩展, 是基于语言的async/await可扩展特性。当处理网�
 Tokio基于Rust语言, Rust能让每个人构建可靠、高效的软件。[大量][microsoft]的[研究][chrome] 表明大约~70%高风险安全问题都是
 由不安全的内存操作引起。使用Rust可以帮你的应用程序清除这个类别的风险。
 
-Tokio also focuses heavily on providing consistent behaviour with no surprises.
-Tokio's major goal is to allow users to deploy predictable software that will
-perform the same day in and day out with reliable response times and no
-unpredictable latency spikes.
+Tokio也主要聚焦于提供无意外的一致性的执行行为。它的主要目标是允许用户构建稳定性可预期的软件，以从部署的第一天起就不会在响应请求
+方面存在不可预期的延迟尖峰。
 
 [microsoft]: https://www.zdnet.com/article/microsoft-70-percent-of-all-security-bugs-are-memory-safety-issues/
 [chrome]: https://www.chromium.org/Home/chromium-security/memory-safety
