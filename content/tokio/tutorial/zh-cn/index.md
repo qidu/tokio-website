@@ -51,10 +51,8 @@ Tokio基本尽可能遵从了标准库的命名风格。只依靠标准版写的
 
 ## 灵活性
 
-Tokio provides multiple variations of the runtime. Everything from a
-multi-threaded, [work-stealing] runtime to a light-weight, single-threaded
-runtime. Each of these runtimes come with many knobs to allow users to tune them
-to their needs.
+Tokio提供了多种形态运行时，包括多线程[工作队列]运行时、轻量单线程运行时。每种运行时都有需要开关方便用户
+有需要时自行优化。
 
 [work-stealing]: https://en.wikipedia.org/wiki/Work_stealing
 
