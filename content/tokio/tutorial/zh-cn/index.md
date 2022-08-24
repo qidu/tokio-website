@@ -33,11 +33,8 @@ Tokio的可扩展, 是基于语言的async/await可扩展特性。当处理网�
 
 ## 可靠
 
-Tokio is built using Rust, which is a language that empowers everyone
-to build reliable and efficient software. A [number][microsoft] of
-[studies][chrome] have found that roughly ~70% of high severity security bugs
-are the result of memory unsafety. Using Rust eliminates this entire class of
-bugs in your applications.
+Tokio基于Rust语言, Rust能让每个人构建可靠、高效的软件。[大量][microsoft]的[研究][chrome] 表明大约~70%高风险安全问题都是
+由不安全的内存操作引起。使用Rust可以帮你的应用程序清除这个类别的风险。
 
 Tokio also focuses heavily on providing consistent behaviour with no surprises.
 Tokio's major goal is to allow users to deploy predictable software that will
