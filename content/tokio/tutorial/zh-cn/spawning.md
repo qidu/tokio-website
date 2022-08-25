@@ -90,20 +90,15 @@ GOT: Array([Bulk(b"set"), Bulk(b"hello"), Bulk(b"world")])
 如果希望Redis server 能处理 **many** 并发请求，我们需要加上一些并发处理能力。
 
 [[info]]
-| Concurrency and parallelism are not the same thing. If you alternate between
-| two tasks, then you are working on both tasks concurrently, but not in
-| parallel. For it to qualify as parallel, you would need two people, one
-| dedicated to each task.
+| Concurrency并发 与 parallelism并行 并不是同一回事。如果你能在两个任务之间来回切换，
+| 那么你就是在并发的处理两个任务，但不是并行的处理。如果想要完全并行处理，你需要有两个人，每人处理一个。
 |
-| One of the advantages of using Tokio is that asynchronous code allows you to
-| work on many tasks concurrently, without having to work on them in parallel
-| using ordinary threads. In fact, Tokio can run many tasks concurrently on a
-| single thread!
+| 使用Tokio的优势之一是，异步代码允许你并发执行很多任务，而不需要像传统方式一样采用很多线程。
+| 事实上，Tokio也能在单个线程上并发执行很多任务。
 
-To process connections concurrently, a new task is spawned for each inbound
-connection. The connection is processed on this task.
+为了并发处理很多连接，每接收一个新连接就生成一个新任务，在任务中处理连接的其他工作。
 
-The accept loop becomes:
+接收循环（accept loop）如下:
 
 ```rust
 use tokio::net::TcpListener;
@@ -126,15 +121,13 @@ async fn main() {
 # async fn process(_: tokio::net::TcpStream) {}
 ```
 
-## Tasks
+## Tasks 任务
 
-A Tokio task is an asynchronous green thread. They are created by passing an
-`async` block to `tokio::spawn`. The `tokio::spawn` function returns a
-`JoinHandle`, which the caller may use to interact with the spawned task. The
-`async` block may have a return value. The caller may obtain the return value
-using `.await` on the `JoinHandle`.
+Tokio任务是异步的绿色线程。它们在传递`async`代码块到`tokio::spawn`时创建。
+`tokio::spawn` 函数返回一个`JoinHandle`, 调用者可使用它与生成的任务交互。
+`async`代码块有返回值。调用者可以通过使用`JoinHandle`的`.await` 来获得返回值。
 
-For example:
+例如:
 
 ```rust
 #[tokio::main]
@@ -151,22 +144,16 @@ async fn main() {
 }
 ```
 
-Awaiting on `JoinHandle` returns a `Result`. When a task encounters an error
-during execution, the `JoinHandle` will return an `Err`. This happens when the
-task either panics, or if the task is forcefully cancelled by the runtime
-shutting down.
+等待`JoinHandle` 返回 `Result`。当任务执行中遇到错误时，`JoinHandle` 也将返回 `Err`。
+在任务panics时, 或任务在运行时关闭而被取消时，都会返回错误。
 
-Tasks are the unit of execution managed by the scheduler. Spawning the task
-submits it to the Tokio scheduler, which then ensures that the task executes
-when it has work to do. The spawned task may be executed on the same thread
-as where it was spawned, or it may execute on a different runtime thread. The
-task can also be moved between threads after being spawned.
+任务是调度器在执行时的单位块。生成任务并提交给Tokio调度器，它将确保任务被执行。生成的任务
+可能在生成时相同的线程，或在另外一个运行时线程。在生成后，任务可以在不同线程中迁移。
 
-Tasks in Tokio are very lightweight. Under the hood, they require only a single
-allocation and 64 bytes of memory. Applications should feel free to spawn
-thousands, if not millions of tasks.
+Tokio任务非常轻量级，在内部它只需要占用64字节内存。应用程序可以自由创建上千个任务不必担心资源，
+上百万个则另当别论。
 
-## `'static` bound
+## `'static` 约束
 
 When you spawn a task on the Tokio runtime, its type's lifetime must be `'static`. This
 means that the spawned task must not contain any references to data owned
