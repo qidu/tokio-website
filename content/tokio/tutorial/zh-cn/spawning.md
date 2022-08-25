@@ -20,9 +20,8 @@ $ mv src/main.rs examples/hello-redis.rs
 [[info]]
 | 很多Tokio类型命名与Rust标准库中的版本相同。这样Tokio暴露了与标准库`std` 相同的API但却是`async fn`异步函数。
 
-A `TcpListener` is bound to port **6379**, then sockets are accepted in a loop.
-Each socket is processed then closed. For now, we will read the command, print
-it to stdout and respond with an error.
+`TcpListener`绑定在端口**6379**, 在循环中接收socket连接。处理每个socket然后关闭它。我们将继续读command，
+并打印到stdout，然后返回error给客户的。
 
 ```rust
 use tokio::net::{TcpListener, TcpStream};
@@ -57,26 +56,25 @@ async fn process(socket: TcpStream) {
 }
 ```
 
-Now, run this accept loop:
+运行服务:
 
 ```bash
 $ cargo run
 ```
 
-In a separate terminal window, run the `hello-redis` example (the `SET`/`GET`
-command from the previous section):
+在另一个终端窗口运行 `hello-redis` 例子 (即前一节实现的 `SET`/`GET` command):
 
 ```bash
 $ cargo run --example hello-redis
 ```
 
-The output should be:
+输出如下:
 
 ```text
 Error: "unimplemented"
 ```
 
-In the server terminal, the output is:
+服务端窗口输出如下:
 
 ```text
 GOT: Array([Bulk(b"set"), Bulk(b"hello"), Bulk(b"world")])
@@ -84,15 +82,12 @@ GOT: Array([Bulk(b"set"), Bulk(b"hello"), Bulk(b"world")])
 
 [tcpl]: https://docs.rs/tokio/1/tokio/net/struct.TcpListener.html
 
-# Concurrency
+# Concurrency 并发
 
-Our server has a slight problem (besides only responding with errors). It
-processes inbound requests one at a time. When a connection is accepted, the
-server stays inside the accept loop block until the response is fully written to
-the socket.
+这里实现的服务器有个小问题 (除了只响应errors外)，它每次只处理一个进来的请求。每接收一个新请求，
+服务器会停留在接收循环中，阻塞到响应结果全写入socket为止。
 
-We want our Redis server to process **many** concurrent requests. To do this, we
-need to add some concurrency.
+如果希望Redis server 能处理 **many** 并发请求，我们需要加上一些并发处理能力。
 
 [[info]]
 | Concurrency and parallelism are not the same thing. If you alternate between
