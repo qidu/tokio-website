@@ -20,30 +20,21 @@ Futures可以通过在异步代码块（async block）中使用`.await` 组合�
 
 ## Executor/scheduler 执行器/调度器
 
-An executor or scheduler is something that executes futures by calling the
-`poll` method repeatedly.  There is no executor in the standard library, so you
-need an external library for this, and the most widely used executor is provided
-by the Tokio runtime.
+执行器/调度器就是能够重复调用futures的`poll` 方法的模块。在标准库中并没有执行器，需要额外的库。
+最广泛被使用的执行器就是由Tokio 运行时提供的。
 
-An executor is able to run a large number of futures concurrently on a few
-threads. It does this by swapping the currently running task at awaits. If code
-spends a long time without reaching an `.await`, that is called "blocking the
-thread" or "not yielding back to the executor", which prevents other tasks from
-running.
+执行器能够在少量线程上并发运行大量的futures，它依靠将运行中的任务遇到awaits时及时交换出去。
+如果一段代码执行很长时间没有遇到`.await`，说明它阻塞了线程或没让出资源给执行器，这将阻碍其他任务的执行。
 
-## Runtime
+## Runtime 运行时
 
 A runtime is a library that contains an executor along with various utilities
-that integrate with that executor, such as timing utilities and IO. The words
-runtime and executor are sometimes used interchangeably. The standard library
-has no runtime, so you need an external library for this, and the most widely
-used runtime is the Tokio runtime.
+运行时是一个集成了各种功能的执行器，比如计时组件、IO组件。名词运行时和执行器通常指能互换使用。
+标准库并没有运行时，所以你需要额外的库来提供，Tokio就是被最广泛用到的一个。
 
-The word Runtime is also used in other contexts, e.g. the phrase "Rust has no
-runtime" is sometimes used to mean that Rust performs no garbage collection or
-just-in-time compilation.
+提到运行时时，有时候也在其他上下文环境有别的意思，如 "Rust has no runtime" 有时是指Rust没有垃圾回收和JIT编译执行模式。
 
-## Task
+## Task 任务
 
 A task is an operation running on the Tokio runtime, created by the
 [`tokio::spawn`] or [`Runtime::block_on`] function. Tools for creating futures by
