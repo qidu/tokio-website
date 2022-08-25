@@ -102,14 +102,11 @@ warning)][unused-warning].
 
 ## Yielding 让出
 
-In the context of asynchronous Rust, yielding is what allows the executor to
-execute many futures on a single thread. Every time a future yields, the
-executor is able to swap that future with some other future, and by repeatedly
-swapping the current task, the executor can concurrently execute a large number
-of tasks. A future can only yield at an `.await`, so futures that spend a long
-time between `.await`s can prevent other tasks from running.
+在Rust异步上下文环境中, yielding 允许执行器在单个线程中执行很多futures。每当future调用yields, 执行器就将切换到其他future，
+通过重复切换当前执行中任务，执行器可以并发的执行大量任务。future在调用 `.await`是让出, 所以futures在两个 `.await`之间花费
+很长时间就会阻塞其他任务的执行。
 
-To be specific, a future yields whenever it returns from the [`poll`] method.
+具体讲，future在从[`poll`]调用中返回后就yields了。 
 
 [`poll`]: https://doc.rust-lang.org/stable/std/future/trait.Future.html#method.poll
 
