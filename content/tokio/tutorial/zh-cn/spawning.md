@@ -2,27 +2,23 @@
 title: "Spawning"
 ---
 
-We are going to shift gears and start working on the Redis server.
+我们将继续编写Redis服务器。
 
-First, move the client `SET`/`GET` code from the previous section to an example
-file. This way, we can run it against our server.
+首先将客户端 `SET`/`GET` 代码迁移到examples目录下，这样可以单独执行它。
 
 ```bash
 $ mkdir -p examples
 $ mv src/main.rs examples/hello-redis.rs
 ```
 
-Then create a new, empty `src/main.rs` and continue.
+接着创建一个新的 `src/main.rs` 空文件。
 
-# Accepting sockets
+# 接收socket连接
 
-The first thing our Redis server needs to do is to accept inbound TCP sockets.
-This is done with [`tokio::net::TcpListener`][tcpl].
+我们的Redis服务器需要做的第一件事就是接收进入的TCP sockets。可使用 [`tokio::net::TcpListener`][tcpl]。
 
-[[info]]
-| Many of Tokio's types are named the same as their synchronous equivalent in
-| the Rust standard library. When it makes sense, Tokio exposes the same APIs
-| as `std` but using `async fn`.
+[[提示]]
+| 很多Tokio类型命名与Rust标准库中的版本相同。这样Tokio暴露了与标准库`std` 相同的API但却是`async fn`异步函数。
 
 A `TcpListener` is bound to port **6379**, then sockets are accepted in a loop.
 Each socket is processed then closed. For now, we will read the command, print
