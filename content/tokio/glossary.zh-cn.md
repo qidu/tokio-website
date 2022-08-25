@@ -115,22 +115,19 @@ To be specific, a future yields whenever it returns from the [`poll`] method.
 
 ## Blocking 阻塞
 
-The word "blocking" is used in two different ways: The first meaning of
-"blocking" is simply to wait for something to finish, and the other meaning of
-blocking is when a future spend a long time without yielding. To be unambiguous,
-you can use the phrase "blocking the thread" for the second meaning.
+名词"blocking"有两个场景含义: 一是阻塞等待完成, 二是指future花费很长执行时间而没让出。
+后者可以说是"blocking the thread"来避免混淆。
 
-Tokio's documentation will always use the second meaning of "blocking".
+Tokio文档中的"blocking"总是指后面一个意思。
 
-To run blocking code within Tokio, please see the [CPU-bound tasks and blocking
-code][api-blocking] section from the Tokio API reference.
+为了用Tokio执行blocking代码，也参考下Tokio API文档中的 [CPU-bound tasks and blocking
+code][api-blocking] 。
 
 [api-blocking]: https://docs.rs/tokio/1/tokio/#cpu-bound-tasks-and-blocking-code
 
 ## Stream 流
 
-A [`Stream`] is an asynchronous version of an [`Iterator`], and provides a
-stream of values. It is commonly used together with a `while let` loop like this:
+流[`Stream`] 是异步版的迭代器 [`Iterator`], 它能提供结果流。通常与 `while let` 循环一起用，如:
 
 ```
 use tokio_stream::StreamExt; // for next()
@@ -143,12 +140,9 @@ while let Some(item) = stream.next().await {
 # }
 ```
 
-The word stream is confusingly sometimes used to refer to the [`AsyncRead`] and
-[`AsyncWrite`] traits.
+名词stream有时候容易迷惑，用 [`AsyncRead`] 和[`AsyncWrite`] traits也可以.
 
-Tokio's stream utilities are currently provided by the [`tokio-stream`] crate.
-Once the `Stream` trait is stabilized in std, the stream utilities will be moved
-into the `tokio` crate.
+Tokio的stream功能放在 [`tokio-stream`] crate中，一旦`Stream` trait在标准库std中稳定, stream功能也将迁移到`tokio` crate中。
 
 [`Stream`]: https://docs.rs/tokio-stream/0.1/tokio/trait.Stream.html
 [`tokio-stream`]: https://docs.rs/tokio-stream
@@ -156,25 +150,19 @@ into the `tokio` crate.
 [`AsyncRead`]: https://docs.rs/tokio/1/tokio/io/trait.AsyncRead.html
 [`AsyncWrite`]: https://docs.rs/tokio/1/tokio/io/trait.AsyncWrite.html
 
-## Channel
+## Channel 管道
 
-A channel is a tool that allows one part of the code to send messages to other
-parts. Tokio provides a [number of channels][channels], each serving a different
-purpose.
+管道用于从一个代码块向另一个代码块发送消息。Tokio 提供满足不同目的的多个[number of channels][channels]。
 
-- [mpsc]: multi-producer, single-consumer channel. Many values can be sent.
-- [oneshot]: single-producer, single consumer channel. A single value can be sent.
-- [broadcast]: multi-producer, multi-consumer. Many values can be send. Each
-  receiver sees every value.
-- [watch]: single-producer, multi-consumer. Many values can be sent, but no
-  history is kept. Receivers only see the most recent value.
+- [mpsc]: multi-producer, single-consumer channel. 可以发送很多次。
+- [oneshot]: single-producer, single consumer channel. 只能发送一次.
+- [broadcast]: multi-producer, multi-consumer. 可以发送很多值. 每个接收着都能收到每个值.
+- [watch]: single-producer, multi-consumer. 可以发送很多值，但不保存拷贝，接收者只能收到最近的值。
 
-If you need a multi-producer multi-consumer channel where only one consumer sees
-each message, you can use the [`async-channel`] crate.
+如果你需要multi-producer multi-consumer 管道且每个值只能被一个consumer收到，可以用 [`async-channel`] crate.
 
-There are also channels for use outside of asynchronous Rust, such as
-[`std::sync::mpsc`] and [`crossbeam::channel`]. These channels wait for messages
-by blocking the thread, which is not allowed in asynchronous code.
+也有很多管道用于异步Rust之外，如[`std::sync::mpsc`] 和 [`crossbeam::channel`]. 那些管道在等待消息时会阻塞线程，
+不能用在异步代码中。
 
 [channels]: https://docs.rs/tokio/1/tokio/sync/index.html
 [mpsc]: https://docs.rs/tokio/1/tokio/sync/mpsc/index.html
@@ -185,7 +173,7 @@ by blocking the thread, which is not allowed in asynchronous code.
 [`std::sync::mpsc`]: https://doc.rust-lang.org/stable/std/sync/mpsc/index.html
 [`crossbeam::channel`]: https://docs.rs/crossbeam/latest/crossbeam/channel/index.html
 
-## Backpressure
+## Backpressure 半双工被压（反压）
 
 Backpressure is a pattern for designing applications that respond well to high
 load. For example, the `mpsc` channel comes in both a bounded and unbounded
@@ -194,7 +182,7 @@ sender if the receiver can't keep up with the number of messages, which avoids
 memory usage growing without bound as more and more messages are sent on the
 channel.
 
-## Actor
+## Actor 执行者
 
 A design pattern for designing applications. An actor refers to an independently
 spawned task that manages some resource on behalf of other parts of the
