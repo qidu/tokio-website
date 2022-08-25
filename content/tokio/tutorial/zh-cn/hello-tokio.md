@@ -76,10 +76,9 @@ Success!
 
 [full]: https://github.com/tokio-rs/website/blob/master/tutorial-code/hello-tokio/src/main.rs
 
-# Breaking it down
+# 分解过程
 
-Let's take some time to go over what we just did. There isn't much code, but a
-lot is happening.
+先这里做了什么，虽然没有太多代码，但也发生了好多隐含过程执行。
 
 ```rust
 # use mini_redis::client;
@@ -89,16 +88,13 @@ let mut client = client::connect("127.0.0.1:6379").await?;
 # }
 ```
 
-The [`client::connect`] function is provided by the `mini-redis` crate. It
-asynchronously establishes a TCP connection with the specified remote address.
-Once the connection is established, a `client` handle is returned. Even though
-the operation is performed asynchronously, the code we write **looks**
-synchronous. The only indication that the operation is asynchronous is the
-`.await` operator.
+函数 [`client::connect`] 由 `mini-redis` crate提供。它异步的建立到目标地址的TCP连接。
+一旦连接成功，返回一个 `client` 句柄。尽管这个操作执行是异步的，但从代码上看起来却像是同步的。
+`.await` 是这些异步操作的唯一提示。
 
 [`client::connect`]: https://docs.rs/mini-redis/0.4/mini_redis/client/fn.connect.html
 
-## What is asynchronous programming?
+## 什么是异步编程?
 
 大多数电脑程序执行顺序与代码编写顺序相同。执行第一行，然后下一行，直到结束。在同步程序中，当遇到一个操作
 无法立即完成，它将阻塞等待。例如，建立一个TCP连接时需要与网络对端交换信令，这将耗费一些时间，在这段时间里，执行线程将被阻塞住。
