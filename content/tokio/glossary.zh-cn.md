@@ -172,20 +172,14 @@ Tokio的stream功能放在 [`tokio-stream`] crate中，一旦`Stream` trait在�
 
 ## Backpressure 半双工被压（反压）
 
-Backpressure is a pattern for designing applications that respond well to high
-load. For example, the `mpsc` channel comes in both a bounded and unbounded
-form. By using the bounded channel, the receiver can put "backpressure" on the
-sender if the receiver can't keep up with the number of messages, which avoids
-memory usage growing without bound as more and more messages are sent on the
-channel.
+反压是一个设计软件时的模式，用以更好响应高负载。例如,  `mpsc` 管道有受限和非受限模式。
+使用受限管道，如果处理不过来消息，接收者就可以将"backpressure" 传递给发送者，这样可以避免
+内存不受限的增长————跟随发送到管道中的消息数量增长。
 
 ## Actor 执行者
 
-A design pattern for designing applications. An actor refers to an independently
-spawned task that manages some resource on behalf of other parts of the
-application, using channels to communicate with those other parts of the
-application.
+Actor是一个设计模式。它代表一个独立生成的任务，用来代替其他模块管理资源，与其他模块通过管道通信。
 
-See [the channels chapter] for an example of an actor.
+[the channels chapter] 有更多actor例子.
 
 [the channels chapter]: /tokio/tutorial/channels
