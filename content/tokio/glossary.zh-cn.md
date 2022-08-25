@@ -39,7 +39,7 @@ A runtime is a library that contains an executor along with various utilities
 任务是指在Tokio运行时上执行的一段代码。使用[`tokio::spawn`] 或 [`Runtime::block_on`] 函数来创建。
 通过调用`.await` and [`join!`] 来合并创建futures的工具并不创建新任务，只是合并他们到已有的任务中。
 
-被要求并行执行的多任务，也可能通过`join!`被并发的合并在单任务中执行。
+被要求并行执行的多任务，也可能通过`join!`被合并在单任务中并发的执行。
 
 [`tokio::spawn`]: https://docs.rs/tokio/1/tokio/fn.spawn.html
 [`Runtime::block_on`]: https://docs.rs/tokio/1/tokio/runtime/struct.Runtime.html#method.block_on
