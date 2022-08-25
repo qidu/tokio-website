@@ -17,7 +17,7 @@ $ mv src/main.rs examples/hello-redis.rs
 
 我们的Redis服务器需要做的第一件事就是接收进入的TCP sockets。可使用 [`tokio::net::TcpListener`][tcpl]。
 
-[[提示]]
+[[info]]
 | 很多Tokio类型命名与Rust标准库中的版本相同。这样Tokio暴露了与标准库`std` 相同的API但却是`async fn`异步函数。
 
 A `TcpListener` is bound to port **6379**, then sockets are accepted in a loop.
