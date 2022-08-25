@@ -169,22 +169,17 @@ world
 
 ## 异步 `main` 函数
 
-The main function used to launch the application differs from the usual one
-found in most of Rust's crates.
+这里用于启动程序的 main 函数与其他大多数Rust模块(crates)中的都不同。
 
-1. It is an `async fn`
-2. It is annotated with `#[tokio::main]`
+1. 它是用 `async fn`定义的
+2. 它被标注了`#[tokio::main]`
 
-An `async fn` is used as we want to enter an asynchronous context. However,
-asynchronous functions must be executed by a [runtime]. The runtime contains the
-asynchronous task scheduler, provides evented I/O, timers, etc. The runtime does
-not automatically start, so the main function needs to start it.
+用`async fn`定义表示想进入到异步上下文环境。异步函数必须被运行时（[runtime]）执行，运行时包含了任务调度器，
+它提供事件型的I/O、定时器等，运行时并不自动启动，需要从main函数里启动它。
 
-The `#[tokio::main]` function is a macro. It transforms the `async fn main()`
-into a synchronous `fn main()` that initializes a runtime instance and executes
-the async main function.
+`#[tokio::main]`是宏定义，它将`async fn main()`转换成异步的`fn main()` ，它初始化运行时实例来执行main函数。
 
-For example, the following:
+如下:
 
 ```rust
 #[tokio::main]
@@ -193,7 +188,7 @@ async fn main() {
 }
 ```
 
-gets transformed into:
+被转换成:
 
 ```rust
 fn main() {
@@ -204,21 +199,18 @@ fn main() {
 }
 ```
 
-The details of the Tokio runtime will be covered later.
+Tokio 运行时的细节将在后续进一步探讨到.
 
 [runtime]: https://docs.rs/tokio/1/tokio/runtime/index.html
 
-## Cargo features
+## Cargo 特性
 
-When depending on Tokio for this tutorial, the `full` feature flag is enabled:
+当依靠Tokio时运行本指南，应打开`full` 特性标志:
 
 ```toml
 tokio = { version = "1", features = ["full"] }
 ```
 
-Tokio has a lot of functionality (TCP, UDP, Unix sockets, timers, sync
-utilities, multiple scheduler types, etc). Not all applications need all
-functionality. When attempting to optimize compile time or the end application
-footprint, the application can decide to opt into **only** the features it uses.
-
-For now, use the "full" feature when depending on Tokio.
+Tokio 有大量的功能 (如TCP, UDP, Unix sockets, timers, sync utilities, multiple scheduler types, 等等). 
+并非所有的应用都需要其全部功能。如果尝试优化编译耗时或最终应用包大小，可以只选用必要的功能和标记。
+运行指南例子，可以用 "full" 特性。
