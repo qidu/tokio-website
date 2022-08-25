@@ -105,11 +105,9 @@ let mut client = client::connect("127.0.0.1:6379").await?;
 虽然异步编程能够让程序响应更快，它也导致了更复杂的程序结构。程序员需要跟踪所有任务状态以恢复那些完成了的异步操作。 曾经这是
 最容易出错的工作。
 
-## Compile-time green-threading
+## 编译期绿色线程
 
-Rust implements asynchronous programing using a feature called [`async/await`].
-Functions that perform asynchronous operations are labeled with the `async`
-keyword. In our example, the `connect` function is defined like this:
+Rust通过[`async/await`]特性实现异步编程.异步操作函数被标记上`async`关键字。例子中的 `connect` 函数即是:
 
 ```rust
 use mini_redis::Result;
@@ -122,21 +120,16 @@ pub async fn connect<T: ToSocketAddrs>(addr: T) -> Result<Client> {
 }
 ```
 
-The `async fn` definition looks like a regular synchronous function, but
-operates asynchronously. Rust transforms the `async fn` at **compile** time into
-a routine that operates asynchronously. Any calls to `.await` within the `async
-fn` yield control back to the thread. The thread may do other work while the
-operation processes in the background.
+这里 `async fn` 定义看起来虽然像同步函数, 但执行起来是异步的。Rust在编译时将`async fn` 标记的函数转换到一个异步过程中执行。
+对`async fn`函数调用 `.await` 让出前台线程的控制权。前台线程继续执行其他过程，阻塞过程转入后台线程。
 
-[[warning]]
-| Although other languages implement [`async/await`] too, Rust takes a unique
-| approach. Primarily, Rust's async operations are **lazy**. This results in
-| different runtime semantics than other languages.
+[[警告]]
+| 虽然其他语言也实现了 [`async/await`] , Rust使用了更独特的方法。
+| Rust的async操作是**lazy**的. 这与其他语言运行时的语义不同。
 
 [`async/await`]: https://en.wikipedia.org/wiki/Async/await
 
-If this doesn't quite make sense yet, don't worry. We will explore `async/await`
-more throughout the guide.
+如果还不理解也别担心，我将在剩下的章节继续探讨 `async/await`特性。
 
 ## Using `async/await`
 
