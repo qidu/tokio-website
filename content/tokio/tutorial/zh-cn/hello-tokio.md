@@ -131,15 +131,12 @@ pub async fn connect<T: ToSocketAddrs>(addr: T) -> Result<Client> {
 
 如果还不理解也别担心，我将在剩下的章节继续探讨 `async/await`特性。
 
-## Using `async/await`
+## 使用 `async/await`
 
-Async functions are called like any other Rust function. However, calling these
-functions does not result in the function body executing. Instead, calling an
-`async fn` returns a value representing the operation. This is conceptually
-analogous to a zero-argument closure. To actually run the operation, you should
-use the `.await` operator on the return value.
+异步函数被调用时很像其他Rust函数。但调用异步函数并不是立即执行函数体，相反，调用`async fn`函数时返回一个代表函数体的值. This is conceptually
+在概念上类似于没有参数的闭包（closure）。要执行函数体，则需要在返回值上进一步调用`.await`操作符。
 
-For example, the given program
+例如，
 
 ```rust
 async fn say_world() {
@@ -159,19 +156,18 @@ async fn main() {
 }
 ```
 
-outputs:
+输出:
 
 ```text
 hello
 world
 ```
 
-The return value of an `async fn` is an anonymous type that implements the
-[`Future`] trait.
+调用`async fn`函数的返回值是一个匿名类型，它实现了[`Future`] trait.
 
 [`Future`]: https://doc.rust-lang.org/std/future/trait.Future.html
 
-## Async `main` function
+## 异步 `main` 函数
 
 The main function used to launch the application differs from the usual one
 found in most of Rust's crates.
