@@ -1,32 +1,24 @@
 ---
-title: Glossary
+title: 术语
 ---
 
-## Asynchronous
+## Asynchronous 异步
 
-In the context of Rust, asynchronous code refers to code that uses the
-async/await language feature, which allows many tasks to run concurrently on a
-few threads (or even a single thread).
+在Rust上下文中, 异步代码是指那些使用了async/await语言特性的代码块, 这使很多任务可以并发的运行在少量线程（甚至单个线程中）。
 
-## Concurrency and parallelism
+## Concurrency and parallelism 并发与并行
 
-Concurrency and parallelism are two related concepts that are both used when
-talking about performing multiple tasks at the same time. If something happens
-in parallel, then it also happens concurrently, but the opposite is not true:
-Alternating between two tasks, but never actually working on both at the same
-time is concurrency but not parallelism.
+并发（Concurrency）与并行（parallelism）都是同时执行多任务相关的概念。如果一些事情并行发生，也可以说它们是并发的。但相反，
+如果在两个任务中交替执行，但从没有实际上在同一时刻执行，就只能称之为并发，而非并行。
 
-## Future
+## Future 将来
 
-A future is a value that stores the current state of some operation. A future
-also has a `poll` method, that makes the operation continue until it needs to
-wait for something, such as an network connection. Calls to the `poll` method
-should return very quickly.
+Future是保存了一些操作块的当前状态的值。它有 `poll` 函数，能够让这些操作继续执行，直到需要等待什么状态，
+比如一个网络连接的结果。调用`poll` 方法，应该非常快就返回。
 
-Futures are often created by combining multiple futures using `.await` in an
-async block.
+Futures可以通过在异步代码块（async block）中使用`.await` 组合很多其他futures。
 
-## Executor/scheduler
+## Executor/scheduler 执行器/调度器
 
 An executor or scheduler is something that executes futures by calling the
 `poll` method repeatedly.  There is no executor in the standard library, so you
