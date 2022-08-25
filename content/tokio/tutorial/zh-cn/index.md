@@ -1,119 +1,79 @@
 ---
-title: "Tutorial"
-subtitle: "Overview"
+title: "指南"
+subtitle: "概述"
 ---
 
-Tokio is an asynchronous runtime for the Rust programming language. It provides
-the building blocks needed for writing networking applications. It gives the
-flexibility to target a wide range of systems, from large servers with dozens of
-cores to small embedded devices.
+Tokio是Rust编程语言中的一个异步运行时框架。它提供了编写网络程序的必要组件模块。它具备运行在包括大型多核服务器到小型嵌入式设备等广泛系统环境的灵活性。 
 
-At a high level, Tokio provides a few major components:
+整体看, Tokio提供主要组件包括:
 
- - A multi-threaded runtime for executing asynchronous code.
- - An asynchronous version of the standard library.
- - A large ecosystem of libraries.
+ - 一个执行异步带宽的多线程运行时.
+ - 标准库的一套异步实现.
+ - 一个基于编程库的生态.
 
-# Tokio's role in your project
+# Tokio在项目中的角色
 
-When you write your application in an asynchronous manner, you enable it to
-scale much better by reducing the cost of doing many things at the same time.
-However, asynchronous Rust code does not run on its own, so you must choose a
-runtime to execute it. The Tokio library is the most widely used runtime,
-surpassing all other runtimes in usage combined.
+当用异步的方式编写应用程序时，你可以让它通过同时执行很多任务的方式获得扩展性和降低成本。
+但Rust代码自身并没有异步环境, 需要你来选择一个运行时执行它们。Tokio库就是被最广泛使用的运行时,
+远超其他同类库.
 
-Additionally, Tokio provides many useful utilities. When writing asynchronous
-code, you cannot use the ordinary blocking APIs provided by the Rust standard
-library, and must instead use asynchronous versions of them. These alternate
-versions are provided by Tokio, mirroring the API of the Rust standard library
-where it makes sense.
+此外，Tokio库也提供很多有用的工具类。在编程异步程序时，你没法使用标准库提供的阻塞时API，Tokio库正好提供了相应的替代，
+也就是标准库的镜像版本，这很有意义。
 
-# Advantages of Tokio
+# Tokio的优点
 
-This section will outline some advantages of Tokio.
+本节概述下Tokio的一些优势。
 
-## Fast
+## 执行快
 
-Tokio is _fast_, built on top of the Rust programming language, which itself is
-fast. This is done in the spirit of Rust with the goal that you should not be
-able to improve the performance by writing equivalent code by hand.
+Tokio速度快，是因它基于本身就快Rust语言构建。通过利用语言内嵌特性获得的执行效率很难通过手写代码获得。
 
-Tokio is _scalable_, built on top of the async/await language feature, which
-itself is scalable. When dealing with networking, there's a limit to how fast
-you can handle a connection due to latency, so the only way to scale is to
-handle many connections at once. With the async/await language feature,
-increasing the number of concurrent operations becomes incredibly cheap,
-allowing you to scale to a large number of concurrent tasks.
+Tokio的可扩展, 是基于语言的async/await可扩展特性。当处理网络IO时, 处理一个连接的速度取决于延迟, 
+所以提升整体速度唯一的方式就同时处理很多连接。通过async/await特性，增加网络并发操作的代价很低，可以让你执行大量的并发任务。
 
-## Reliable
+## 可靠
 
-Tokio is built using Rust, which is a language that empowers everyone
-to build reliable and efficient software. A [number][microsoft] of
-[studies][chrome] have found that roughly ~70% of high severity security bugs
-are the result of memory unsafety. Using Rust eliminates this entire class of
-bugs in your applications.
+Tokio基于Rust语言, Rust能让每个人构建可靠、高效的软件。[大量][microsoft]的[研究][chrome] 表明大约~70%高风险安全问题都是
+由不安全的内存操作引起。使用Rust可以帮你的应用程序清除这个类别的风险。
 
-Tokio also focuses heavily on providing consistent behaviour with no surprises.
-Tokio's major goal is to allow users to deploy predictable software that will
-perform the same day in and day out with reliable response times and no
-unpredictable latency spikes.
+Tokio也主要聚焦于提供无意外的一致性的执行行为。它的主要目标是允许用户构建稳定性可预期的软件，以从部署的第一天起就不会在响应请求
+方面存在不可预期的延迟尖峰。
 
 [microsoft]: https://www.zdnet.com/article/microsoft-70-percent-of-all-security-bugs-are-memory-safety-issues/
 [chrome]: https://www.chromium.org/Home/chromium-security/memory-safety
 
-## Easy
+## 简单
 
-With Rust's async/await feature, the complexity of writing asynchronous
-applications has been lowered substantially. Paired with Tokio's utilities and
-vibrant ecosystem, writing applications is a breeze.
+依靠Rust的async/await特性, 编写异步程序的难度有了实质性的降低。结合Tokio的功能组件和活跃的生态，编写异步应用也就极为简单了。
 
-Tokio follows the standard library's naming convention when it makes sense. This
-allows easily converting code written with only the standard library to code
-written with Tokio. With the strong type system of Rust, the ability to deliver
-correct code easily is unparalleled.
+Tokio基本尽可能遵从了标准库的命名风格。只依靠标准版写的代码很容易转换为依靠Tokio库。通过Rust强大的类型系统，就无以伦比地降低了
+编写正确代码的难度。 
 
-## Flexible
+## 灵活性
 
-Tokio provides multiple variations of the runtime. Everything from a
-multi-threaded, [work-stealing] runtime to a light-weight, single-threaded
-runtime. Each of these runtimes come with many knobs to allow users to tune them
-to their needs.
+Tokio提供了多种形态运行时，包括多线程[工作队列]运行时、轻量单线程运行时。每种运行时都有需要开关方便用户
+有需要时自行优化。
 
 [work-stealing]: https://en.wikipedia.org/wiki/Work_stealing
 
-# When not to use Tokio
+# 何时不适合用Tokio
 
-Although Tokio is useful for many projects that need to do a lot of things
-simultaneously, there are also some use-cases where Tokio is not a good fit.
+尽管Tokio对很多需要处理大量并发任务的项目有帮助的，仍有很多场景并不适合用它。
 
- - Speeding up CPU-bound computations by running them in parallel on several
-   threads. Tokio is designed for IO-bound applications where each individual
-   task spends most of its time waiting for IO. If the only thing your
-   application does is run computations in parallel, you should be using
-   [rayon]. That said, it is still possible to "mix & match"
-   if you need to do both.
- - Reading a lot of files. Although it seems like Tokio would be useful for
-   projects that simply need to read a lot of files, Tokio provides no advantage
-   here compared to an ordinary threadpool. This is because operating systems
-   generally do not provide asynchronous file APIs.
- - Sending a single web request. The place where Tokio gives you an advantage is
-   when you need to do many things at the same time. If you need to use a
-   library intended for asynchronous Rust such as [reqwest], but you don't need
-   to do a lot of things at once, you should prefer the blocking version of that
-   library, as it will make your project simpler. Using Tokio will still work,
-   of course, but provides no real advantage over the blocking API. If the
-   library doesn't provide a blocking API, see [the chapter on
+ - 通过多线程并行执行来加速CPU密集型任务. 设计Tokio是为I/O密集型任务应用场景加速，每个任务连接花费大量时间在等待I/O操作上。
+　 如果你的应用需要对计算过程进行并行加速，那应用使用[rayon]。如果你同时需要I/O密集型和CPU密集型支持，也有可能进行 "mix & match"使用。
+ - 读取很多文件。虽然Tokio好像对读取很多文件的项目看起来有用，但相比一般线程池并没有优势，因为操作系统一般并没有提供异步文件API。
+ - 发送单个网络请求。ToKio提供的支持是并发多任务，如果你想要异步直接用其他Rust库如[reqwest], 但你并不需要大量并发任务执行，
+ 　采用阻塞版本的库可以让项目结构更简单些。这时用Tokio并没有优势。如果这个库并没有阻塞式API，可以参考这里　[the chapter on
    bridging with sync code][bridging].
 
 [rayon]: https://docs.rs/rayon/
 [reqwest]: https://docs.rs/reqwest/
 [bridging]: /tokio/topics/bridging
 
-# Getting Help
+# 获得帮助
 
-At any point, if you get stuck, you can always get help on [Discord] or [GitHub
-discussions][disc]. Don't worry about asking "beginner" questions. We all start
-somewhere and are happy to help.
+任何时候当你遇到使用困难时可以在 [Discord] 或 [GitHub discussions][disc]　得到支持. 不要担心提出初学者问题，我们很高兴协助。
 
 [discord]: https://discord.gg/tokio
 [disc]: https://github.com/tokio-rs/tokio/discussions

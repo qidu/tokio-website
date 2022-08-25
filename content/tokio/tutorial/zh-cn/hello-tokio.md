@@ -2,33 +2,32 @@
 title: "Hello Tokio"
 ---
 
-We will get started by writing a very basic Tokio application. It will connect
-to the Mini-Redis server, set the value of the key `hello` to `world`. It will
-then read back the key. This will be done using the Mini-Redis client library.
+我们将从写一个非常基本的Tokio应用开始。用它连接Mini-Redis服务端，设入<'hello','world'>。
+再读出键值。这里会使用Mini-Redis客户端库。
 
-# The code
+# 代码
 
-## Generate a new crate
+## 创建新crate
 
-Let's start by generating a new Rust app:
+先生成Rust应用:
 
 ```bash
 $ cargo new my-redis
 $ cd my-redis
 ```
 
-## Add dependencies
+## 添加依赖
 
-Next, open `Cargo.toml` and add the following right below `[dependencies]`:
+接着打开 `Cargo.toml` 添加如下内容到 `[dependencies]`:
 
 ```toml
 tokio = { version = "1", features = ["full"] }
 mini-redis = "0.4"
 ```
 
-## Write the code
+## 写代码
 
-Then, open `main.rs` and replace the contents of the file with:
+接着打开 `main.rs` 并替换这个文件的内容成如下:
 
 ```rust
 use mini_redis::{client, Result};
@@ -52,19 +51,19 @@ async fn main() -> Result<()> {
 # }
 ```
 
-Make sure the Mini-Redis server is running. In a separate terminal window, run:
+确认先启动 Mini-Redis 服务端. 在另一个终端窗口执行:
 
 ```bash
 $ mini-redis-server
 ```
 
-If you have not already installed mini-redis, you can do so with
+如果还没有安装 mini-redis, 可用如下命令: 
 
 ```bash
 $ cargo install mini-redis
 ```
 
-Now, run the `my-redis` application:
+现在运行 `my-redis` 应用:
 
 ```bash
 $ cargo run
@@ -73,14 +72,13 @@ got value from the server; result=Some(b"world")
 
 Success!
 
-You can find the full code [here][full].
+完整代码在 [这里][full].
 
 [full]: https://github.com/tokio-rs/website/blob/master/tutorial-code/hello-tokio/src/main.rs
 
-# Breaking it down
+# 分解过程
 
-Let's take some time to go over what we just did. There isn't much code, but a
-lot is happening.
+先这里做了什么，虽然没有太多代码，但也发生了好多隐含过程执行。
 
 ```rust
 # use mini_redis::client;
@@ -90,41 +88,26 @@ let mut client = client::connect("127.0.0.1:6379").await?;
 # }
 ```
 
-The [`client::connect`] function is provided by the `mini-redis` crate. It
-asynchronously establishes a TCP connection with the specified remote address.
-Once the connection is established, a `client` handle is returned. Even though
-the operation is performed asynchronously, the code we write **looks**
-synchronous. The only indication that the operation is asynchronous is the
-`.await` operator.
+函数 [`client::connect`] 由 `mini-redis` crate提供。它异步的建立到目标地址的TCP连接。
+一旦连接成功，返回一个 `client` 句柄。尽管这个操作执行是异步的，但从代码上看起来却像是同步的。
+`.await` 是这些异步操作的唯一提示。
 
 [`client::connect`]: https://docs.rs/mini-redis/0.4/mini_redis/client/fn.connect.html
 
-## What is asynchronous programming?
+## 什么是异步编程?
 
-Most computer programs are executed in the same order in which they are written.
-The first line executes, then the next, and so on.  With synchronous programming,
-when a program encounters an operation that cannot be completed immediately, it
-will block until the operation completes. For example, establishing a TCP
-connection requires an exchange with a peer over the network, which can take a
-sizeable amount of time. During this time, the thread is blocked.
+大多数电脑程序执行顺序与代码编写顺序相同。执行第一行，然后下一行，直到结束。在同步程序中，当遇到一个操作
+无法立即完成，它将阻塞等待。例如，建立一个TCP连接时需要与网络对端交换信令，这将耗费一些时间，在这段时间里，执行线程将被阻塞住。
 
-With asynchronous programming, operations that cannot complete immediately are
-suspended to the background. The thread is not blocked, and can continue running
-other things. Once the operation completes, the task is unsuspended and continues
-processing from where it left off. Our example from before only has one task, so
-nothing happens while it is suspended, but asynchronous programs typically have
-many such tasks.
+异步编程时, 那些无法立即完成的操作都被挂起暂停在后台，前台线程不会被阻塞，能够继续往下执行。一旦阻塞的操作完成后，任务被唤起，
+继续从原有位置执行。我们的例子中仅有一个任务，所以挂起时没有别的需要执行。异步程序中通常有许多任务并发执行。 
 
-Although asynchronous programming can result in faster applications, it often
-results in much more complicated programs. The programmer is required to track
-all the state necessary to resume work once the asynchronous operation
-completes. Historically, this is a tedious and error-prone task.
+虽然异步编程能够让程序响应更快，它也导致了更复杂的程序结构。程序员需要跟踪所有任务状态以恢复那些完成了的异步操作。 曾经这是
+最容易出错的工作。
 
-## Compile-time green-threading
+## 编译期绿色线程
 
-Rust implements asynchronous programing using a feature called [`async/await`].
-Functions that perform asynchronous operations are labeled with the `async`
-keyword. In our example, the `connect` function is defined like this:
+Rust通过[`async/await`]特性实现异步编程.异步操作函数被标记上`async`关键字。例子中的 `connect` 函数即是:
 
 ```rust
 use mini_redis::Result;
@@ -137,31 +120,23 @@ pub async fn connect<T: ToSocketAddrs>(addr: T) -> Result<Client> {
 }
 ```
 
-The `async fn` definition looks like a regular synchronous function, but
-operates asynchronously. Rust transforms the `async fn` at **compile** time into
-a routine that operates asynchronously. Any calls to `.await` within the `async
-fn` yield control back to the thread. The thread may do other work while the
-operation processes in the background.
+这里 `async fn` 定义看起来虽然像同步函数, 但执行起来是异步的。Rust在编译时将`async fn` 标记的函数转换到一个异步过程中执行。
+对`async fn`函数调用 `.await` 让出前台线程的控制权。前台线程继续执行其他过程，阻塞过程转入后台线程。
 
-[[warning]]
-| Although other languages implement [`async/await`] too, Rust takes a unique
-| approach. Primarily, Rust's async operations are **lazy**. This results in
-| different runtime semantics than other languages.
+[[警告]]
+| 虽然其他语言也实现了 [`async/await`] , Rust使用了更独特的方法。
+| Rust的async操作是**lazy**的. 这与其他语言运行时的语义不同。
 
 [`async/await`]: https://en.wikipedia.org/wiki/Async/await
 
-If this doesn't quite make sense yet, don't worry. We will explore `async/await`
-more throughout the guide.
+如果还不理解也别担心，我将在剩下的章节继续探讨 `async/await`特性。
 
-## Using `async/await`
+## 使用 `async/await`
 
-Async functions are called like any other Rust function. However, calling these
-functions does not result in the function body executing. Instead, calling an
-`async fn` returns a value representing the operation. This is conceptually
-analogous to a zero-argument closure. To actually run the operation, you should
-use the `.await` operator on the return value.
+异步函数被调用时很像其他Rust函数。但调用异步函数并不是立即执行函数体，相反，调用`async fn`函数时返回一个代表函数体的值. This is conceptually
+在概念上类似于没有参数的闭包（closure）。要执行函数体，则需要在返回值上进一步调用`.await`操作符。
 
-For example, the given program
+例如，
 
 ```rust
 async fn say_world() {
@@ -181,36 +156,30 @@ async fn main() {
 }
 ```
 
-outputs:
+输出:
 
 ```text
 hello
 world
 ```
 
-The return value of an `async fn` is an anonymous type that implements the
-[`Future`] trait.
+调用`async fn`函数的返回值是一个匿名类型，它实现了[`Future`] trait.
 
 [`Future`]: https://doc.rust-lang.org/std/future/trait.Future.html
 
-## Async `main` function
+## 异步 `main` 函数
 
-The main function used to launch the application differs from the usual one
-found in most of Rust's crates.
+这里用于启动程序的 main 函数与其他大多数Rust模块(crates)中的都不同。
 
-1. It is an `async fn`
-2. It is annotated with `#[tokio::main]`
+1. 它是用 `async fn`定义的
+2. 它被标注了`#[tokio::main]`
 
-An `async fn` is used as we want to enter an asynchronous context. However,
-asynchronous functions must be executed by a [runtime]. The runtime contains the
-asynchronous task scheduler, provides evented I/O, timers, etc. The runtime does
-not automatically start, so the main function needs to start it.
+用`async fn`定义表示想进入到异步上下文环境。异步函数必须被运行时（[runtime]）执行，运行时包含了任务调度器，
+它提供事件型的I/O、定时器等，运行时并不自动启动，需要从main函数里启动它。
 
-The `#[tokio::main]` function is a macro. It transforms the `async fn main()`
-into a synchronous `fn main()` that initializes a runtime instance and executes
-the async main function.
+`#[tokio::main]`是宏定义，它将`async fn main()`转换成异步的`fn main()` ，它初始化运行时实例来执行main函数。
 
-For example, the following:
+如下:
 
 ```rust
 #[tokio::main]
@@ -219,7 +188,7 @@ async fn main() {
 }
 ```
 
-gets transformed into:
+被转换成:
 
 ```rust
 fn main() {
@@ -230,21 +199,18 @@ fn main() {
 }
 ```
 
-The details of the Tokio runtime will be covered later.
+Tokio 运行时的细节将在后续进一步探讨到.
 
 [runtime]: https://docs.rs/tokio/1/tokio/runtime/index.html
 
-## Cargo features
+## Cargo 特性
 
-When depending on Tokio for this tutorial, the `full` feature flag is enabled:
+当依靠Tokio时运行本指南，应打开`full` 特性标志:
 
 ```toml
 tokio = { version = "1", features = ["full"] }
 ```
 
-Tokio has a lot of functionality (TCP, UDP, Unix sockets, timers, sync
-utilities, multiple scheduler types, etc). Not all applications need all
-functionality. When attempting to optimize compile time or the end application
-footprint, the application can decide to opt into **only** the features it uses.
-
-For now, use the "full" feature when depending on Tokio.
+Tokio 有大量的功能 (如TCP, UDP, Unix sockets, timers, sync utilities, multiple scheduler types, 等等). 
+并非所有的应用都需要其全部功能。如果尝试优化编译耗时或最终应用包大小，可以只选用必要的功能和标记。
+运行指南例子，可以用 "full" 特性。
