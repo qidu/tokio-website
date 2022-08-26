@@ -179,7 +179,7 @@ async fn main() {
 }
 ```
 
-Attempting to compile this results in the following error:
+尝试编译会产生如下错误:
 
 ```text
 error[E0373]: async block may outlive the current function, but
@@ -232,19 +232,16 @@ or "the value is `'static`" to refer to `T: 'static`，这些都表示相同的�
 
 ## `Send` 约束
 
-Tasks spawned by `tokio::spawn` **must** implement `Send`. This allows the Tokio
-runtime to move the tasks between threads while they are suspended at an
-`.await`.
+采用 `tokio::spawn` 生成的任务必须**must** 实现 `Send`，它允许Tokio运行时
+在遇到`.await`挂起时，能在多个线程中迁移任务。
 
-Tasks are `Send` when **all** data that is held **across** `.await` calls is
-`Send`. This is a bit subtle. When `.await` is called, the task yields back to
-the scheduler. The next time the task is executed, it resumes from the point it
-last yielded. To make this work, all state that is used **after** `.await` must
-be saved by the task. If this state is `Send`, i.e. can be moved across threads,
-then the task itself can be moved across threads. Conversely, if the state is not
-`Send`, then neither is the task.
+任务是 `Send`的，指它持有的 **all** 全部数据能跨 **across** `.await` 调用。
+这有点微妙。当调用到 `.await` 时，当前任务让出而归还给调度器，下一次轮到它执行, 
+将从让出点恢复。要让这个机制工作，所有**after** 在`.await`后用到的状态需要保存
+在任务中。如果那些状态是可 `Send`的，比如能在线程间迁移，那么任务本身也就能在多个
+线程间迁移。相反，如果状态不是可`Send`的, 则任务也不能。
 
-For example, this works:
+例如以下是可以的:
 
 ```rust
 use tokio::task::yield_now;
@@ -266,7 +263,7 @@ async fn main() {
 }
 ```
 
-This does not:
+以下这样就不行:
 
 ```rust,compile_fail
 use tokio::task::yield_now;
@@ -286,7 +283,7 @@ async fn main() {
 }
 ```
 
-Attempting to compile the snippet results in:
+如果编译它会产生如下错误:
 
 ```text
 error: future cannot be sent between threads safely
@@ -318,12 +315,11 @@ note: future is not `Send` as this value is used across an await
     |     - `rc` is later dropped here
 ```
 
-We will discuss a special case of this error in more depth [in the next
-chapter][mutex-guard].
+在后面会更深入探讨这个错误 [in the next chapter][mutex-guard].
 
 [mutex-guard]: shared-state#holding-a-mutexguard-across-an-await
 
-# Store values
+# Store values 保存值
 
 We will now implement the `process` function to handle incoming commands. We
 will use a `HashMap` to store values. `SET` commands will insert into the
