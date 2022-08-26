@@ -1,16 +1,16 @@
 ---
-title: "Shared state"
+title: "共享数据状态"
 ---
 
-So far, we have a key-value server working. However, there is a major flaw:
-state is not shared across connections. We will fix that in this article.
+截至目前我们实现了一个key-value服务器。但它有一个主要缺陷: 数据状态不能在不同的连接之间共享。
+本节我们将修复这个问题。
 
-# Strategies
+# Strategies 策略
 
-There are a couple of different ways to share state in Tokio.
+Tokio中有许多不同的方案来共享状态。
 
-1. Guard the shared state with a Mutex.
-2. Spawn a task to manage the state and use message passing to operate on it.
+1. 采用互斥锁来管理共享状态。
+2. 生成任务来管理，采用管道消息来驱动。
 
 Generally you want to use the first approach for simple data, and the second
 approach for things that require asynchronous work such as I/O primitives.  In
