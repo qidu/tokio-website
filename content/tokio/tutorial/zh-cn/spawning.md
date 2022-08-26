@@ -321,10 +321,8 @@ note: future is not `Send` as this value is used across an await
 
 # Store values 保存值
 
-We will now implement the `process` function to handle incoming commands. We
-will use a `HashMap` to store values. `SET` commands will insert into the
-`HashMap` and `GET` values will load them. Additionally, we will use a loop to
-accept more than one command per connection.
+我们将实现 `process` 函数来处理进入的连接命令。使用 `HashMap` 来保存值。
+收到`SET` 命令则插入到`HashMap`，收到 `GET` 则读出。此外，使用循环来处理每个连接上的多个命令。
 
 ```rust
 use tokio::net::TcpStream;
@@ -368,30 +366,29 @@ async fn process(socket: TcpStream) {
 }
 ```
 
-Now, start the server:
+启动服务:
 
 ```bash
 $ cargo run
 ```
 
-and in a separate terminal window, run the `hello-redis` example:
+在另一个终端窗口启动 `hello-redis` :
 
 ```bash
 $ cargo run --example hello-redis
 ```
 
-Now, the output will be:
+看到如下输出:
 
 ```text
 got value from the server; result=Some(b"world")
 ```
 
-We can now get and set values, but there is a problem: The values are not
-shared between connections. If another socket connects and tries to `GET`
-the `hello` key, it will not find anything.
+我们能 get 和 set 值了。但还有一个问题: 这些值不能在不同连接上共享使用。
+如果有另一个socket连接来 `GET`　`hello` 键, 服务端就找不到它。
 
-You can find the full code [here][full].
+你可以从这里获得全部代码 [here][full].
 
-In the next section, we will implement persisting data for all sockets.
+在下一节，我们将为所有的连接实现一个持久化的数据集。
 
 [full]: https://github.com/tokio-rs/website/blob/master/tutorial-code/spawning/src/main.rs
