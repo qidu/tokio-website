@@ -12,10 +12,8 @@ Tokio中有许多不同的方案来共享状态。
 1. 采用互斥锁来管理共享状态。
 2. 生成任务来管理，采用管道消息来驱动。
 
-Generally you want to use the first approach for simple data, and the second
-approach for things that require asynchronous work such as I/O primitives.  In
-this chapter, the shared state is a `HashMap` and the operations are `insert`
-and `get`. Neither of these operations is asynchronous, so we will use a
+通常你可以用第1种方法来保护数据结构，用第2种方法来处理I/O原语的异步操作。本节要保护的
+状态是`HashMap` 和其 `insert`、`get`操作. Neither of these operations is asynchronous, so we will use a
 `Mutex`.
 
 The latter approach is covered in the next chapter.
