@@ -138,38 +138,27 @@ async fn process(socket: TcpStream, db: Db) {
 
 # Tasks, threads, and contention 任务，线程，锁竞争
 
-Using a blocking mutex to guard short critical sections is an acceptable
-strategy when contention is minimal. When a lock is contended, the thread
-executing the task must block and wait on the mutex. This will not only block
-the current task but it will also block all other tasks scheduled on the current
-thread.
+如果锁竞争的代价小，用阻塞锁管理小的临界区是可以的。当遇到锁竞争时，执行当前任务的线程
+会阻塞等待获取锁，这不仅阻塞当前任务，也阻塞所有其他调度在同线程的任务。
 
-By default, the Tokio runtime uses a multi-threaded scheduler. Tasks are
-scheduled on any number of threads managed by the runtime. If a large number of
-tasks are scheduled to execute and they all require access to the mutex, then
-there will be contention. On the other hand, if the
-[`current_thread`][current_thread] runtime flavor is used, then the mutex will
-never be contended.
+Tokio运行时默认会用多现场调度器。任务会调度在被运行时管理的任意数量的线程上。如果
+要获取锁的任务数量庞大，肯定将有锁竞争。换句话说，如果用了[`current_thread`][current_thread] 
+运行时语法糖，则不会有锁竞争（都在同一线程）。
 
 [[info]]
-| The [`current_thread` runtime flavor][basic-rt] is a lightweight,
-| single-threaded runtime. It is a good choice when only spawning
-| a few tasks and opening a handful of sockets. For example, this
-| option works well when providing a synchronous API bridge on top
-| of an asynchronous client library.
+|  [`current_thread`运行时语法糖 ][basic-rt] 是轻量的、单线程运行时。在只生成少量任务
+| 处理屈指可数的socket时，它是一个好的选择。例如，当在异步库上提供同步API时。 
 
 [basic-rt]: https://docs.rs/tokio/1/tokio/runtime/struct.Builder.html#method.new_current_thread
 
-If contention on a synchronous mutex becomes a problem, the best fix is rarely
-to switch to the Tokio mutex. Instead, options to consider are:
+当使用同步锁遇到竞争时，最好改用Tokio来修复。否则，也可以采用:
 
-- Switching to a dedicated task to manage state and use message passing.
-- Shard the mutex.
-- Restructure the code to avoid the mutex.
+- 切换到专用任务来管理状态，使用消息。
+- 锁分片。
+- 重构代码避免锁。
 
-In our case, as each *key* is independent, mutex sharding will work well. To do
-this, instead of having a single `Mutex<HashMap<_, _>>` instance, we would
-introduce `N` distinct instances.
+在我们的例子里，每个*key* 都是相互独立的, 可以使用锁分片。就不再用单实例的 `Mutex<HashMap<_, _>>` ，
+可以用 `N` 个不同实例。
 
 ```rust
 # use std::collections::HashMap;
@@ -185,26 +174,22 @@ fn new_sharded_db(num_shards: usize) -> ShardedDb {
 }
 ```
 
-Then, finding the cell for any given key becomes a two step process. First, the
-key is used to identify which shard it is part of. Then, the key is looked up in
-the `HashMap`.
+接着，2步操作来找到对应的表。先用key来区分使用哪个锁分片和表；再到对应 `HashMap`中操作。
 
 ```rust,compile_fail
 let shard = db[hash(key) % db.len()].lock().unwrap();
 shard.insert(key, value);
 ```
 
-The simple implementation outlined above requires using a fixed number of
-shards, and the number of shards cannot be changed once the sharded map is
-created. The [dashmap] crate provides an implementation of a more sophisticated
-sharded hash map.
+以上简单实现中需要固定数量的分片，且在创建后无法改变分片的数量。 [dashmap] crate 
+提供了一个更成熟的共享哈希表实现。
 
 [current_thread]: https://docs.rs/tokio/1/tokio/runtime/index.html#current-thread-scheduler
 [dashmap]: https://docs.rs/dashmap
 
-# Holding a `MutexGuard` across an `.await`
+# 持有 `MutexGuard` 跨越 `.await` 调用
 
-You might write code that looks like this:
+你也许会写出如下代码:
 ```rust
 use std::sync::{Mutex, MutexGuard};
 
@@ -216,8 +201,7 @@ async fn increment_and_do_stuff(mutex: &Mutex<i32>) {
 } // lock goes out of scope here
 # async fn do_something_async() {}
 ```
-When you try to spawn something that calls this function, you will encounter the
-following error message:
+当你尝试生成任务来调用这个函数时，将遭遇以下错误:
 ```text
 error: future cannot be sent between threads safely
    --> src/lib.rs:13:5
@@ -242,11 +226,9 @@ note: future is not `Send` as this value is used across an await
 8   | }
     | - `mut lock` is later dropped here
 ```
-This happens because the `std::sync::MutexGuard` type is **not** `Send`. This
-means that you can't send a mutex lock to another thread, and the error happens
-because the Tokio runtime can move a task between threads at every `.await`.
-To avoid this, you should restructure your code such that the mutex lock's
-destructor runs before the `.await`.
+发生错误是因为 `std::sync::MutexGuard` 的类型不是可 **not** `Send`的。它是说你没法跨线程发送一个锁。 This
+Tokio 运行时每次遇到`.await`调用时会在线程间迁移move任务。未避免该错误，你需要重构代码让锁在 `.await`调用之前被释放掉。
+
 ```rust
 # use std::sync::{Mutex, MutexGuard};
 // This works!
@@ -260,7 +242,7 @@ async fn increment_and_do_stuff(mutex: &Mutex<i32>) {
 }
 # async fn do_something_async() {}
 ```
-Note that this does not work:
+注意，以下仍不对:
 ```rust
 use std::sync::{Mutex, MutexGuard};
 
@@ -274,13 +256,10 @@ async fn increment_and_do_stuff(mutex: &Mutex<i32>) {
 }
 # async fn do_something_async() {}
 ```
-This is because the compiler currently calculates whether a future is `Send`
-based on scope information only. The compiler will hopefully be updated to
-support explicitly dropping it in the future, but for now, you must explicitly
-use a scope.
+这是因为目前编译器判断是否一个future任务需要`Send`只是基于它的scope信息。
+编译器未来可能显示支持drop，但现在你必须显示使用scope。
 
-Note that the error discussed here is also discussed in the [Send bound section
-from the spawning chapter][send-bound].
+注意，这个错误也在 [Send bound section from the spawning chapter][send-bound] 中讨论到。
 
 You should not try to circumvent this issue by spawning the task in a way that
 does not require it to be `Send`, because if Tokio suspends your task at an
@@ -289,11 +268,11 @@ run on the same thread, and this other task may also try to lock that mutex,
 which would result in a deadlock as the task waiting to lock the mutex would
 prevent the task holding the mutex from releasing the mutex.
 
-We will discuss some approaches to fix the error message below:
+我们将在以下内容中讨论到一些修复办法:
 
 [send-bound]: spawning#send-bound
 
-## Restructure your code to not hold the lock across an `.await`
+## 重构代码来避免持有跨`.await`调用的锁
 
 We have already seen one example of this in the snippet above, but there are
 some more robust ways to do this. For example, you can wrap the mutex in a
@@ -321,13 +300,13 @@ async fn increment_and_do_stuff(can_incr: &CanIncrement) {
 This pattern guarantees that you won't run into the `Send` error, because the
 mutex guard does not appear anywhere in an async function.
 
-## Spawn a task to manage the state and use message passing to operate on it
+## 生成一个任务管理状态，再用消息传递来驱动它
 
 This is the second approach mentioned in the start of this chapter, and is often
 used when the shared resource is an I/O resource. See the next chapter for more
 details.
 
-## Use Tokio's asynchronous mutex
+## 使用Tokio异步锁
 
 The [`tokio::sync::Mutex`] type provided by Tokio can also be used. The primary
 feature of the Tokio mutex is that it can be held across an `.await` without any
