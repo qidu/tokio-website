@@ -155,19 +155,16 @@ Tokio任务非常轻量级，在内部它只需要占用64字节内存。应用�
 
 ## `'static` 约束
 
-When you spawn a task on the Tokio runtime, its type's lifetime must be `'static`. This
-means that the spawned task must not contain any references to data owned
-outside the task.
+当你在Tokio运行时中生成一个新任务，它的类型生命周期应该是`'static`。这意味着新生成的任务不应该持有任何被外部拥有的数据引用。
 
 [[info]]
-| It is a common misconception that `'static` always means "lives forever",
-| but this is not the case. Just because a value is `'static` does not mean
-| that you have a memory leak. You can read more in [Common Rust Lifetime
+| 普遍对`'static`生命周期的误解是永远存活（"lives forever"），这并不对。
+| 因为一个值是 `'static` 的并不意味有了内存泄漏。可以从这了解更多 [Common Rust Lifetime
 | Misconceptions][common-lifetime].
 
 [common-lifetime]: https://github.com/pretzelhammer/rust-blog/blob/master/posts/common-rust-lifetime-misconceptions.md#2-if-t-static-then-t-must-be-valid-for-the-entire-program
 
-For example, the following will not compile:
+例如以下代码编译失败:
 
 ```rust,compile_fail
 use tokio::task;
@@ -213,36 +210,27 @@ help: to force the async block to take ownership of `v` (and any other
   |
 ```
 
-This happens because, by default, variables are not **moved** into async blocks.
-The `v` vector remains owned by the `main` function. The `println!` line borrows
-`v`. The rust compiler helpfully explains this to us and even suggests the fix!
-Changing line 7 to `task::spawn(async move {` will instruct the compiler to
-**move** `v` into the spawned task. Now, the task owns all of its data, making
-it `'static`.
+这种错误是因为变量没有被 **moved** 异步代码块中。`v` 数组被　`main` 函数持有。
+语句 `println!` 借用了　`v`。Rust编译器解释了这个错误并给我们如何修复的建议。
+第７行　`task::spawn(async move {` 将指示编译器　**move** `v` 到生成的任务中。
+这样该任务就拥有了所有数据，使它自己变成了 `'static`的类型。
 
-If a single piece of data must be accessible from more than one task
-concurrently, then it must be shared using synchronization primitives such as
-`Arc`.
+如果有些数据需要从并发的多个任务中访问，可以采用同步原语（如`Arc`）来将它共享。
 
-Note that the error message talks about the argument type *outliving* the
-`'static` lifetime. This terminology can be rather confusing because the
-`'static` lifetime lasts until the end of the program, so if it outlives it,
-don't you have a memory leak? The explanation is that it is the *type*, not the
-*value* that must outlive the `'static` lifetime, and the value may be destroyed
-before its type is no longer valid.
+注意错误信息中提到参数类型 *outliving* 了`'static` 生命周期。这样的术语会让人迷惑，
+因为 `'static` 生命周期会持续到程序结束, 如果变量生存超过`'static`,难道不是出现了
+内存泄漏吗？正确的解释是，需要类型 *type*, 而不是　*value* 必须超过 `'static` 生命周期, 
+值必须在类型生命周期前被销毁。
 
-When we say that a value is `'static`, all that means is that it would not be
-incorrect to keep that value around forever. This is important because the
-compiler is unable to reason about how long a newly spawned task stays around,
-so the only way it can be sure that the task doesn't live too long is to make
-sure it may live forever.
+当我们说一个值是 `'static`的时候, 全部意思是说将它一直保持下去不会不正确。
+这是必要的因为编译器无法知道一个新生成的任务需要存在多久，所以唯一确定的是
+这个任务可能是一直存在的。
 
-The article that the info-box earlier links to uses the terminology "bounded by
-`'static`" rather than "its type outlives `'static`" or "the value is `'static`"
-to refer to `T: 'static`. These all mean the same thing, but are different from
-"annotated with `'static`" as in `&'static T`.
+前面的信息中的术语 "bounded by `'static`" rather than "its type outlives `'static`" 
+or "the value is `'static`" to refer to `T: 'static`，这些都表示相同的意思。
+但与 "annotated with `'static`" （ `&'static T`）是有区别的。
 
-## `Send` bound
+## `Send` 约束
 
 Tasks spawned by `tokio::spawn` **must** implement `Send`. This allows the Tokio
 runtime to move the tasks between threads while they are suspended at an
