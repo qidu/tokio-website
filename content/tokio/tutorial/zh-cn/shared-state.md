@@ -88,20 +88,15 @@ async fn main() {
 同步锁会阻塞当前任务线程，相应的就阻塞了其他任务的执行。尽管如此，切换到`tokio::sync::Mutex`
 通常也并不可行，因为异步锁的内部也是用同步锁实现。
 
-As a rule of thumb, using a synchronous mutex from within asynchronous code is
-fine as long as contention remains low and the lock is not held across calls to
-`.await`. Additionally, consider using [`parking_lot::Mutex`][parking_lot] as a
-faster alternative to `std::sync::Mutex`.
+一个经验法则是，只要锁竞争小且不会跨`.await`调用的话，就可以在异步代码中使用同步锁，
+也可以用更快的 [`parking_lot::Mutex`][parking_lot] 作为 `std::sync::Mutex`的替代。
 
 [parking_lot]: https://docs.rs/parking_lot/0.10.2/parking_lot/type.Mutex.html
 
-# Update `process()`
+# 更新 `process()`
 
-The process function no longer initializes a `HashMap`. Instead, it takes the
-shared handle to the `HashMap` as an argument. It also needs to lock the
-`HashMap` before using it. Remember that the value's type for the HashMap 
-is now `Bytes` (which we can cheaply clone), so this needs to be changed
-as well.
+在函数process 不在初始化 `HashMap`，它使用`HashMap`的共享句柄作为参数。在使用
+`HashMap` 前需要加锁。注意HashMap的值类型是 `Bytes`了 (轻量克隆)，相应修改。
 
 ```rust
 use tokio::net::TcpStream;
@@ -141,7 +136,7 @@ async fn process(socket: TcpStream, db: Db) {
 }
 ```
 
-# Tasks, threads, and contention
+# Tasks, threads, and contention 任务，线程，锁竞争
 
 Using a blocking mutex to guard short critical sections is an acceptable
 strategy when contention is minimal. When a lock is contended, the thread
