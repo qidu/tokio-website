@@ -13,23 +13,18 @@ Tokio中有许多不同的方案来共享状态。
 2. 生成任务来管理，采用管道消息来驱动。
 
 通常你可以用第1种方法来保护数据结构，用第2种方法来处理I/O原语的异步操作。本节要保护的
-状态是`HashMap` 和其 `insert`、`get`操作. Neither of these operations is asynchronous, so we will use a
-`Mutex`.
+状态是`HashMap` 和其 `insert`、`get`操作，这些都不是异步操作，我们用`Mutex`保护它。
 
-The latter approach is covered in the next chapter.
+第2种方法我们将在下一节探讨。
 
-# Add `bytes` dependency
+# 添加 `bytes` 库 
 
-Instead of using `Vec<u8>`, the Mini-Redis crate uses `Bytes` from the [`bytes`]
-crate. The goal of `Bytes` is to provide a robust byte array structure for
-network programming. The biggest feature it adds over `Vec<u8>` is shallow
-cloning. In other words, calling `clone()` on a `Bytes` instance does not copy
-the underlying data. Instead, a `Bytes` instance is a reference-counted handle
-to some underlying data. The `Bytes` type is roughly an `Arc<Vec<u8>>` but with
-some added capabilities.
+Mini-Redis crate 使用 [`bytes`]库里的`Bytes`代替标准库的`Vec<u8>`。`Bytes` 能为网络编程
+提供健壮的字节数组结构。它在 `Vec<u8>` 之上添加的最大特性是浅拷贝。换句话说调用 `clone()` 
+不会拷贝底层数据。`Bytes` 实例是底层数据的引用计数句柄。`Bytes` 类型除了其他额外功能外，
+粗略等同于 `Arc<Vec<u8>>` 。
 
-To depend on `bytes`, add the following to your `Cargo.toml` in the
-`[dependencies]` section:
+为使用 `bytes`, 添加如下内容到 `Cargo.toml` 的 `[dependencies]` 部分:
 
 ```toml
 bytes = "1"
@@ -37,12 +32,11 @@ bytes = "1"
 
 [`bytes`]: https://docs.rs/bytes/1/bytes/struct.Bytes.html
 
-# Initialize the `HashMap`
+# 初始化 `HashMap`
 
-The `HashMap` will be shared across many tasks and potentially many threads. To
-support this, it is wrapped in `Arc<Mutex<_>>`.
+`HashMap` 将在多个任务中共享，可能是在多个线程中运行。为支持它需要用到 `Arc<Mutex<_>>`。
 
-First, for convenience, add the following type alias after the `use` statements.
+首先，为了方便，在 `use` 语句后定义对应类型。
 
 ```rust
 use bytes::Bytes;
@@ -52,11 +46,9 @@ use std::sync::{Arc, Mutex};
 type Db = Arc<Mutex<HashMap<String, Bytes>>>;
 ```
 
-Then, update the `main` function to initialize the `HashMap` and pass an `Arc`
-**handle** to the `process` function. Using `Arc` allows the `HashMap` to be
-referenced concurrently from many tasks, potentially running on many threads.
-Throughout Tokio, the term **handle** is used to reference a value that provides
-access to some shared state.
+然后，更新 `main` 函数，初始化`HashMap` 并传 `Arc` **handle** 给 `process` 函数。
+使用`Arc` 让 `HashMap`成为可在多并发任务及线程里使用的引用。在Tokio中，术语 **handle** 
+被用于引用那些共享状态值。
 
 ```rust
 use tokio::net::TcpListener;
@@ -88,17 +80,13 @@ async fn main() {
 # async fn process(_: tokio::net::TcpStream, _: Db) {}
 ```
 
-## On using `std::sync::Mutex`
+## 使用 `std::sync::Mutex`
 
-Note, `std::sync::Mutex` and **not** `tokio::sync::Mutex` is used to guard the
-`HashMap`. A common error is to unconditionally use `tokio::sync::Mutex` from
-within async code. An async mutex is a mutex that is locked across calls to
-`.await`.
+注意，是用 `std::sync::Mutex` 而非 **not** `tokio::sync::Mutex` 来保护`HashMap`。
+常见的错误是，在异步代码中无条件的用 `tokio::sync::Mutex`。异步锁适合用在跨`.await`调用的环境。
 
-A synchronous mutex will block the current thread when waiting to acquire the
-lock. This, in turn, will block other tasks from processing. However, switching
-to `tokio::sync::Mutex` usually does not help as the asynchronous mutex uses a
-synchronous mutex internally.
+同步锁会阻塞当前任务线程，相应的就阻塞了其他任务的执行。尽管如此，切换到`tokio::sync::Mutex`
+通常也并不可行，因为异步锁的内部也是用同步锁实现。
 
 As a rule of thumb, using a synchronous mutex from within asynchronous code is
 fine as long as contention remains low and the lock is not held across calls to
