@@ -1,17 +1,15 @@
 ---
-title: "Channels"
+title: "Channels 消息管道"
 ---
 
-Now that we have learned a bit about concurrency with Tokio, let's apply this on
-the client side. Put the server code we wrote before into an explicit binary 
-file:
+截至目前我们学了一些Tokio的并发技术, 可以用到这个client例子上。将前面写的server代码移到bin目录:
 
 ```text
 mkdir src/bin
 mv src/main.rs src/bin/server.rs
 ```
 
-and create a new binary file that will contain the client code:
+再创建一个新bin文件包含client代码:
 
 ```text
 touch src/bin/client.rs
