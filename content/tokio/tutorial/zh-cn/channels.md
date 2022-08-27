@@ -77,14 +77,12 @@ async fn main() {
 
 # Tokio 管道原语
 
-Tokio provides a [number of channels][channels], each serving a different purpose.
+Tokio  [有多种管道][channels], 每一个服务于一个不同的目的。
 
-- [mpsc]: multi-producer, single-consumer channel. Many values can be sent.
-- [oneshot]: single-producer, single consumer channel. A single value can be sent.
-- [broadcast]: multi-producer, multi-consumer. Many values can be sent. Each
-  receiver sees every value.
-- [watch]: single-producer, multi-consumer. Many values can be sent, but no
-  history is kept. Receivers only see the most recent value.
+- [mpsc]: multi-producer, single-consumer channel. 多个值可以被发送。
+- [oneshot]: single-producer, single consumer channel. 只能发送单一值。
+- [broadcast]: multi-producer, multi-consumer. 多个值可以被发送，每个接收者看到所有值。
+- [watch]: single-producer, multi-consumer. 多个值可以被发送，但不保存历史，接收者只看到最新的消息。
 
 If you need a multi-producer multi-consumer channel where only one consumer sees
 each message, you can use the [`async-channel`] crate. There are also channels
