@@ -296,18 +296,14 @@ async fn increment_and_do_stuff(can_incr: &CanIncrement) {
 
 ## 生成一个任务管理状态，再用消息传递来驱动它
 
-This is the second approach mentioned in the start of this chapter, and is often
-used when the shared resource is an I/O resource. See the next chapter for more
-details.
+这是用锁的第二种方法。这种方法常用于保护I/O操作等。将在下一节探讨它。
 
 ## 使用Tokio异步锁
 
-The [`tokio::sync::Mutex`] type provided by Tokio can also be used. The primary
-feature of the Tokio mutex is that it can be held across an `.await` without any
-issues. That said, an asynchronous mutex is more expensive than an ordinary
-mutex, and it is typically better to use one of the two other approaches.
+也可以用Tokio的[`tokio::sync::Mutex`] 锁类型。Tokio mutex 的基本特性是它能够被跨 `.await`
+调用而正确持有。也就是说, 一个异步锁的代价要远高于普通锁，所以最好用另外两个办法来防止锁错误。
 ```rust
-use tokio::sync::Mutex; // note! This uses the Tokio mutex
+use tokio::sync::Mutex; // 注意，这里用的是 Tokio mutex
 
 // This compiles!
 // (but restructuring the code would be better in this case)
