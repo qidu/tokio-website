@@ -261,12 +261,8 @@ async fn increment_and_do_stuff(mutex: &Mutex<i32>) {
 
 注意，这个错误也在 [Send bound section from the spawning chapter][send-bound] 中讨论到。
 
-You should not try to circumvent this issue by spawning the task in a way that
-does not require it to be `Send`, because if Tokio suspends your task at an
-`.await` while the task is holding the lock, some other task may be scheduled to
-run on the same thread, and this other task may also try to lock that mutex,
-which would result in a deadlock as the task waiting to lock the mutex would
-prevent the task holding the mutex from releasing the mutex.
+你不能通过生成不用 `Send`的任务来规避这个错误，因为Tokio在执行到`.await` 调用时会挂起持有锁的任务，
+导致别的任务如果需要同一个锁就没法在同样的线程上执行，否则且等待锁的任务阻止持有锁的任务没法释放锁，导致死锁。
 
 我们将在以下内容中讨论到一些修复办法:
 
