@@ -70,15 +70,12 @@ async fn main() {
 任务想要发出一个请求就发一个消息到 `client` 任务。`client` 任务代表sender发出请求, 
 响应也会回传给sender。
 
-Using this strategy, a single connection is established. The task managing the
-`client` is able to get exclusive access in order to call `get` and `set`.
-Additionally, the channel works as a buffer. Operations may be sent to the
-`client` task while the `client` task is busy. Once the `client` task is
-available to process new requests, it pulls the next request from the channel.
-This can result in better throughput, and be extended to support connection
-pooling.
+使用这个策略，单一连接建立后，管理`client`的任务可以排他的访问 `get` and `set`。
+此外, 管道channel相当于一个缓冲。所有操作可以被发送到`client` 任务即使它很忙碌。
+一旦 `client` 任务可以处理新请求, 它将从管道中拉取下一个请求。这将得到一个更好的
+吞吐能力，可以进一步扩展成连接池。
 
-# Tokio's channel primitives
+# Tokio 管道原语
 
 Tokio provides a [number of channels][channels], each serving a different purpose.
 
