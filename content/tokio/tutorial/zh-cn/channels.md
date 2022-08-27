@@ -66,10 +66,9 @@ async fn main() {
 
 # 消息传递
 
-The answer is to use message passing. The pattern involves spawning a dedicated
-task to manage the `client` resource. Any task that wishes to issue a request
-sends a message to the `client` task. The `client` task issues the request on
-behalf of the sender, and the response is sent back to the sender.
+正确的做法是使用消息传递。这个模式需要生成一个专用任务来管理 `client` 资源，任何其他
+任务想要发出一个请求就发一个消息到 `client` 任务。`client` 任务代表sender发出请求, 
+响应也会回传给sender。
 
 Using this strategy, a single connection is established. The task managing the
 `client` is able to get exclusive access in order to call `get` and `set`.
