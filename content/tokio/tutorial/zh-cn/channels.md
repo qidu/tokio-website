@@ -101,10 +101,8 @@ Tokio  [有多种管道][channels], 每一个服务于一个不同的目的。
 
 # 自定义消息类型
 
-In most cases, when using message passing, the task receiving the messages
-responds to more than one command. In our case, the task will respond to `GET` and
-`SET` commands. To model this, we first define a `Command` enum and include a
-variant for each command type.
+大多数情况下，使用消息的任务中会响应多种命令。这个例子中任务响应 `GET` 和 `SET` 。
+为表达这个，我们定义 `Command` 枚举类，包含每种命令。
 
 ```rust
 use bytes::Bytes;
@@ -121,9 +119,9 @@ enum Command {
 }
 ```
 
-# Create the channel
+# 创建管道
 
-In the `main` function, an `mpsc` channel is created.
+在 `main` 函数中创建了 `mpsc` 管道。
 
 ```rust
 use tokio::sync::mpsc;
@@ -138,17 +136,14 @@ async fn main() {
 }
 ```
 
-The `mpsc` channel is used to **send** commands to the task managing the redis
-connection. The multi-producer capability allows messages to be sent from many
-tasks. Creating the channel returns two values, a sender and a receiver. The two
-handles are used separately. They may be moved to different tasks.
+`mpsc` 管道被用来**send** 命令到管理连接的任务中。它的多生产者能力，允许从多个其他任务中发送消息。
+创建管道将返回两个值：发送者sender 和 接收者receiver。这两个消息句柄可独自使用，可能被迁移到不同
+任务中。
 
-The channel is created with a capacity of 32. If messages are sent faster than
-they are received, the channel will store them. Once the 32 messages are stored
-in the channel, calling `send(...).await` will go to sleep until a message has
-been removed by the receiver.
+管道的容量设为32。如果消息发送的快于接收速度，管道将缓存这些消息。一旦保存满32条消息，调用 `send(...).await`
+将导致发送者所在的线程进入休眠，直到有一个消息从管道中被接收者取走。
 
-Sending from multiple tasks is done by **cloning** the `Sender`. For example:
+通过克隆**cloning** `Sender`句柄实现从多个任务中发送消息。例如:
 
 ```rust
 use tokio::sync::mpsc;
