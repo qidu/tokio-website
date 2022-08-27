@@ -30,10 +30,9 @@ cargo run --bin client
 
 可以开始写代码了!
 
-Say we want to run two concurrent Redis commands. We can spawn
-one task per command. Then the two commands would happen concurrently.
+即我们想运行两个并发的Redis命令。为每个命令生成一个任务，那么两个命令就并发的执行了。
 
-At first, we might try something like:
+首先, 我们先尝试如下代码:
 
 ```rust,compile_fail
 use mini_redis::client;
