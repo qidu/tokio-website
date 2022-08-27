@@ -270,9 +270,8 @@ async fn increment_and_do_stuff(mutex: &Mutex<i32>) {
 
 ## 重构代码来避免持有跨`.await`调用的锁
 
-We have already seen one example of this in the snippet above, but there are
-some more robust ways to do this. For example, you can wrap the mutex in a
-struct, and only ever lock the mutex inside non-async methods on that struct.
+在上面的代码段里已经看到一个用锁的例子，但实际上有更好更强壮的实现方案。例如，
+你可以将锁包装到一个struct里，只在struct的同步函数scope内有获取和释放锁的操作。
 ```rust
 use std::sync::Mutex;
 
@@ -293,8 +292,7 @@ async fn increment_and_do_stuff(can_incr: &CanIncrement) {
 }
 # async fn do_something_async() {}
 ```
-This pattern guarantees that you won't run into the `Send` error, because the
-mutex guard does not appear anywhere in an async function.
+这个设计模式确保你不会遭遇用锁引起 `Send` 错误, 因为加锁释放锁不会出现在异步函数体中。
 
 ## 生成一个任务管理状态，再用消息传递来驱动它
 
