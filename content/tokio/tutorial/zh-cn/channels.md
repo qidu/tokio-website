@@ -84,15 +84,11 @@ Tokio  [有多种管道][channels], 每一个服务于一个不同的目的。
 - [broadcast]: multi-producer, multi-consumer. 多个值可以被发送，每个接收者看到所有值。
 - [watch]: single-producer, multi-consumer. 多个值可以被发送，但不保存历史，接收者只看到最新的消息。
 
-If you need a multi-producer multi-consumer channel where only one consumer sees
-each message, you can use the [`async-channel`] crate. There are also channels
-for use outside of asynchronous Rust, such as [`std::sync::mpsc`] and
-[`crossbeam::channel`]. These channels wait for messages by blocking the
-thread, which is not allowed in asynchronous code.
+如果你需要 multi-producer multi-consumer 管道且每次只有一个接收者能看到一个新消息，
+可以使用 [`async-channel`] crate. 也有管道是用在异步代码之外的，如 [`std::sync::mpsc`] 和
+[`crossbeam::channel`]. 这些管道会等待消息进而阻塞当前线程，这种事不允许在异步代码中出现。
 
-In this section, we will use [mpsc] and [oneshot]. The other types of message
-passing channels are explored in later sections. The full code from this section
-is found [here][full].
+在这节，我们将使用 [mpsc] 和 [oneshot] 管道。其他管道在后续的章节中涉及。完整代码在 [这里][full].
 
 [channels]: https://docs.rs/tokio/1/tokio/sync/index.html
 [mpsc]: https://docs.rs/tokio/1/tokio/sync/mpsc/index.html
@@ -103,7 +99,7 @@ is found [here][full].
 [`std::sync::mpsc`]: https://doc.rust-lang.org/stable/std/sync/mpsc/index.html
 [`crossbeam::channel`]: https://docs.rs/crossbeam/latest/crossbeam/channel/index.html
 
-# Define the message type
+# 自定义消息类型
 
 In most cases, when using message passing, the task receiving the messages
 responds to more than one command. In our case, the task will respond to `GET` and
