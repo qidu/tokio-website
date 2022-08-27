@@ -56,18 +56,15 @@ async fn main() {
 }
 ```
 
-This does not compile because both tasks need to access the `client` somehow.
-As `Client` does not implement `Copy`, it will not compile without some code to
-facilitate this sharing. Additionally, `Client::set` takes `&mut self`, which
-means that exclusive access is required to call it. We could open a connection
-per task, but that is not ideal. We cannot use `std::sync::Mutex` as `.await`
-would need to be called with the lock held. We could use `tokio::sync::Mutex`,
-but that would only allow a single in-flight request. If the client implements
-[pipelining], an async mutex results in underutilizing the connection.
+这代码无法编译，因为两个任务都要访问 `client` ，而 `Client` 没有实现 `Copy` 特性, 
+在没有支持对象共享的代码前，没法编译。此外，`Client::set` 有 `&mut self` 参数，这
+意味这需要独占式的访问它。我们也可以在每个任务中打开一个新连接，但这样的做法不理想。
+也不能使用 `std::sync::Mutex` 因为 `.await` 调用导致锁无法释放。可以用 `tokio::sync::Mutex`,
+但它只允许一个 in-flight 请求. 如果client 实现了 [pipelining], 异步锁会导致不能充分利用连接能力。
 
 [pipelining]: https://redis.io/topics/pipelining
 
-# Message passing
+# 消息传递
 
 The answer is to use message passing. The pattern involves spawning a dedicated
 task to manage the `client` resource. Any task that wishes to issue a request
