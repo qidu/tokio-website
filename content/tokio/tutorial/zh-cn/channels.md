@@ -167,23 +167,16 @@ async fn main() {
 }
 ```
 
-Both messages are sent to the single `Receiver` handle. It is not possible to
-clone the receiver of an `mpsc` channel.
+多个来源消息都被发送到同一个接收者 `Receiver` 句柄。在 `mpsc` 管道上不能克隆接收者。
 
-When every `Sender` has gone out of scope or has otherwise been dropped, it is
-no longer possible to send more messages into the channel. At this point, the
-`recv` call on the `Receiver` will return `None`, which means that all senders
-are gone and the channel is closed.
+每个 `Sender` 超出生命周期时被释放，将不在能用它发送消息到管道。此时，在接收者上调用`recv`
+将返回 `None`，它意味着所有的发送者都已被销毁，管道已关闭。
 
-In our case of a task that manages the Redis connection, it knows that it
-can close the Redis connection once the channel is closed, as the connection
-will not be used again.
+在我们的例子中，管理Redis连接的任务相应知道在管道管理时也该关闭连接。
 
-# Spawn manager task
+# 生成管理任务
 
-Next, spawn a task that processes messages from the channel. First, a client
-connection is established to Redis. Then, received commands are issued via the
-Redis connection.
+接着，生成任务来管理消息。首先，建立一个连接到Redis；然后，收到的命令再被发送到Redis连接上。
 
 ```rust
 use mini_redis::client;
