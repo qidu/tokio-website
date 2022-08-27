@@ -15,20 +15,20 @@ mv src/main.rs src/bin/server.rs
 touch src/bin/client.rs
 ```
 
-In this file you will write this page's code. Whenever you want to run it,
-you will have to launch the server first in a separate terminal window:
+本页的代码将被写到这个文件中。当你想运行客户端代码前，先在另一个单独的终端窗口
+启动server:
 
 ```text
 cargo run --bin server
 ```
 
-And then the client, __separately__:
+然后再单独启用client:
 
 ```text
 cargo run --bin client
 ```
 
-That being said, let's code!
+可以开始写代码了!
 
 Say we want to run two concurrent Redis commands. We can spawn
 one task per command. Then the two commands would happen concurrently.
