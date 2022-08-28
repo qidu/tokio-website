@@ -255,15 +255,12 @@ manager.await.unwrap();
 
 # 接收响应
 
-The final step is to receive the response back from the manager task. The `GET`
-command needs to get the value and the `SET` command needs to know if the
-operation completed successfully.
+最后一步是从管理任务收回响应。`GET`命令需要得到返回值，而`SET` 需要知道操作结果是否成功。
 
-To pass the response, a `oneshot` channel is used. The `oneshot` channel is a
-single-producer, single-consumer channel optimized for sending a single value.
-In our case, the single value is the response.
+为了传递结果，使用 `oneshot` 管道。`oneshot` 是优化了以发送单一值的single-producer, single-consumer管道。
+在我们的例子里，这个单一值就是响应结果。
 
-Similar to `mpsc`, `oneshot::channel()` returns a sender and receiver handle.
+与 `mpsc`相似，调用`oneshot::channel()` 返回一对句柄。
 
 ```rust
 use tokio::sync::oneshot;
@@ -274,15 +271,11 @@ let (tx, rx) = oneshot::channel();
 # }
 ```
 
-Unlike `mpsc`, no capacity is specified as the capacity is always one.
-Additionally, neither handle can be cloned.
+与 `mpsc`不同，无需指定管道容量因为它始终是一。此外，任何一个句柄都不能被克隆。
 
-To receive responses from the manager task, before sending a command, a `oneshot`
-channel is created. The `Sender` half of the channel is included in the command
-to the manager task. The receive half is used to receive the response.
-
-First, update `Command` to include the `Sender`. For convenience, a type alias
-is used to reference the `Sender`.
+为从连接管理任务接收响应，在发送命令前，需要创建一个 `oneshot`管道。其中`Sender` 句柄
+需要包含在发送给管理任务的命令中，而接收句柄留着等待响应。
+首先，更新 `Command` 以包含 `Sender`。为方便，定义一个类型别名来引用`Sender`。
 
 ```rust
 use tokio::sync::oneshot;
@@ -354,7 +347,7 @@ let t2 = tokio::spawn(async move {
 # }
 ```
 
-Finally, update the manager task to send the response over the `oneshot` channel.
+最后，更新连接管理任务，以通过 `oneshot` 管道发送响应。
 
 ```rust
 # use tokio::sync::{oneshot, mpsc};
@@ -384,18 +377,16 @@ while let Some(cmd) = rx.recv().await {
 # }
 ```
 
-Calling `send` on `oneshot::Sender` completes immediately and does **not**
-require an `.await`. This is because `send` on a `oneshot` channel will always
-fail or succeed immediately without any form of waiting.
+调用`oneshot::Sender`的`send`方法会立即完成，不需要 `.await`。这是因为`oneshot` 
+管道的`send`函数将总是返回失败或立即成功而不会有任何形式的等待。
 
-Sending a value on a oneshot channel returns `Err` when the receiver half has
-dropped. This indicates the receiver is no longer interested in the response. In
-our scenario, the receiver cancelling interest is an acceptable event. The `Err`
-returned by `resp.send(...)` does not need to be handled.
+在oneshot管道上发送消息只在接收者被销毁时才得到`Err`返回值。这意味着接收者对响应值不
+再感兴趣。在我们的场景里，接收者取消等待返回值也是可接受的事件。调用`resp.send(...)`的`Err`
+返回值不需要处理。
 
-You can find the entire code [here][full].
+你可以 [在这里][full]找到完整代码。
 
-# Backpressure and bounded channels
+# 受限管道上的背压
 
 Whenever concurrency or queuing is introduced, it is important to ensure that the
 queueing is bounded and the system will gracefully handle the load. Unbounded queues
