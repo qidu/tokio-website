@@ -176,7 +176,7 @@ async fn main() {
 
 # 生成管理任务
 
-接着，生成任务来管理消息。首先，建立一个连接到Redis；然后，收到的命令再被发送到Redis连接上。
+接着，生成任务来管理消息。首先，建立一个连接到Redis；然后，收到命令后再被发送到Redis连接上。
 
 ```rust
 use mini_redis::client;
@@ -208,8 +208,7 @@ let manager = tokio::spawn(async move {
 # }
 ```
 
-Now, update the two tasks to send commands over the channel instead of issuing
-them directly on the Redis connection.
+现在可更新2个任务，通过管道发送命令，代替直接发送命令到Redis连接上。
 
 ```rust
 # #[derive(Debug)]
@@ -243,8 +242,7 @@ let t2 = tokio::spawn(async move {
 # }
 ````
 
-At the bottom of the `main` function, we `.await` the join handles to ensure the
-commands fully complete before the process exits.
+在 `main` 函数的结尾，我们调用join句柄的 `.await` 以确保命令在进程退出前都被完全处理好。
 
 ```rust
 # type Jh = tokio::task::JoinHandle<()>;
@@ -255,7 +253,7 @@ manager.await.unwrap();
 # }
 ```
 
-# Receive responses
+# 接收响应
 
 The final step is to receive the response back from the manager task. The `GET`
 command needs to get the value and the `SET` command needs to know if the
