@@ -2,15 +2,12 @@
 title: "I/O"
 ---
 
-I/O in Tokio operates in much the same way as in `std`, but asynchronously. There
-is a trait for reading ([`AsyncRead`]) and a trait for writing ([`AsyncWrite`]).
-Specific types implement these traits as appropriate ([`TcpStream`], [`File`],
-[`Stdout`]). [`AsyncRead`] and [`AsyncWrite`] are also implemented by a number
-of data structures, such as `Vec<u8>` and `&[u8]`. This allows using byte arrays
-where a reader or writer is expected.
+在Tokio中I/O接口基本与系统库`std`中操作相同，但都是不同步的。这里有负责读的 ([`AsyncRead`]) 
+特性和负责写的 ([`AsyncWrite`])特性。
+指定类型来实现上述特性适合操作 ([`TcpStream`], [`File`],[`Stdout`])。特性[`AsyncRead`] 和 [`AsyncWrite`] 
+也被很多数据结构实现了，如 `Vec<u8>` 和 `&[u8]`。这允许在有reader和writer的地方使用字节数组。
 
-This page will cover basic I/O reading and writing with Tokio and work through a
-few examples. The next page will get into a more advanced I/O example.
+本页将继续通过一些例子探讨依靠Tokio的基本I/O读写。下一页深入更高级I/O操作例子。
 
 # `AsyncRead` and `AsyncWrite`
 
