@@ -300,7 +300,7 @@ enum Command {
 type Responder<T> = oneshot::Sender<mini_redis::Result<T>>;
 ```
 
-Now, update the tasks issuing the commands to include the `oneshot::Sender`.
+现在更新这个任务，发出包含也有 `oneshot::Sender`的任务。
 
 ```rust
 # use tokio::sync::{oneshot, mpsc};
@@ -388,13 +388,10 @@ while let Some(cmd) = rx.recv().await {
 
 # 受限管道上的背压
 
-Whenever concurrency or queuing is introduced, it is important to ensure that the
-queueing is bounded and the system will gracefully handle the load. Unbounded queues
-will eventually fill up all available memory and cause the system to fail in
-unpredictable ways.
+任何时候引入并发和消息队列时，确保队列长度是受限的就很重要。系统可以平滑负载。而不受限的消息队列
+会最终填满耗尽全部内存，引起系统掉进不可预知的运行状态。
 
-Tokio takes care to avoid implicit queuing. A big part of this is the fact that
-async operations are lazy. Consider the following:
+Tokio小心避免显示的消息队列，一个重要的原因是由于异步操作全是lazy惰性的。考虑如下代码：
 
 ```rust
 # fn async_op() {}
@@ -406,15 +403,11 @@ loop {
 # fn main() {}
 ```
 
-If the asynchronous operation runs eagerly, the loop will repeatedly queue a new
-`async_op` to run without ensuring the previous operation completed. This
-results in implicit unbounded queuing. Callback based systems and **eager**
-future based systems are particularly susceptible to this.
+如果异步操作急切执行，loop循环将重复加入一个新的`async_op`执行而不会等待前一个结果。这导致
+一个隐式的不受限队列。基于回调的系统，和急切的**eager**延后执行系统，对此都很敏感。
 
-However, with Tokio and asynchronous Rust, the above snippet will **not** result
-in `async_op` running at all. This is because `.await` is never called. If the
-snippet is updated to use `.await`, then the loop waits for the operation to
-complete before starting over.
+但是，在Tokio和Rust异步编程中，上面的代码并不会 **not** 导致`async_op`执行。这是因为 `.await` 
+还没被调用。如果更新一下调用 `.await`，这样loop循环将等待操作完成后然后才进入下一个执行。
 
 ```rust
 # async fn async_op() {}
@@ -427,18 +420,17 @@ loop {
 # fn main() {}
 ```
 
-Concurrency and queuing must be explicitly introduced. Ways to do this include:
+并发和队列需要显示引入。这样做的方法包括:
 
 * `tokio::spawn`
 * `select!`
 * `join!`
 * `mpsc::channel`
 
-When doing so, take care to ensure the total amount of concurrency is bounded. For
-example, when writing a TCP accept loop, ensure that the total number of open
-sockets is bounded. When using `mpsc::channel`, pick a manageable channel
-capacity. Specific bound values will be application specific.
+当这么做时，当心确保全部并发任务的数量是受限的。例如，当编写TCP连接接收循环时，确保打开的全部
+连接数量是受限的。当使用`mpsc::channel`管道，选择一个可容忍的容量初始化值。指定容量会使程序
+运行更有确定。
 
-Taking care and picking good bounds is a big part of writing reliable Tokio applications.
+小心选择合适的受限容量，是写好可靠的Tokio应用的重要部分。
 
 [full]: https://github.com/tokio-rs/website/blob/master/tutorial-code/channels/src/main.rs
