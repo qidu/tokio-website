@@ -9,16 +9,13 @@ title: "I/O"
 
 本页将继续通过一些例子探讨依靠Tokio的基本I/O读写。下一页深入更高级I/O操作例子。
 
-# `AsyncRead` and `AsyncWrite`
+# `AsyncRead` 和 `AsyncWrite`
 
-These two traits provide the facilities to asynchronously read from and write to
-byte streams. The methods on these traits are typically not called directly,
-similar to how you don't manually call the `poll` method from the `Future`
-trait. Instead, you will use them through the utility methods provided by
-[`AsyncReadExt`] and [`AsyncWriteExt`].
+这两个特性traits提供了从字节流中异步的读取和写入的能力。那些特性上的方法一般不用直接调用。
+与你不会直接调用`Future`的`poll`方法类似。相反，你通过工具类[`AsyncReadExt`] 和 [`AsyncWriteExt`]
+使用它们。
 
-Let's briefly look at a few of these methods. All of these functions are `async`
-and must be used with `.await`.
+我们先简要的看看那些方法。那些函数都是 `async`的，需要结合 `.await`调用。
 
 ## `async fn read()`
 
