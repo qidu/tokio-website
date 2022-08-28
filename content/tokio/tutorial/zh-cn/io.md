@@ -19,13 +19,10 @@ title: "I/O"
 
 ## `async fn read()`
 
-[`AsyncReadExt::read`][read] provides an async method for reading data into a
-buffer, returning the number of bytes read.
+[`AsyncReadExt::read`][read] 提供了异步读取数据到缓冲中的方法，返回值是读取字节数。
 
-**Note:** when `read()` returns `Ok(0)`, this signifies that the stream is
-closed. Any further calls to `read()` will complete immediately with `Ok(0)`.
-With [`TcpStream`] instances, this signifies that the read half of the socket is
-closed.
+**注意:** 当 `read()` 返回 `Ok(0)`，这表示流已经关闭。继续调用`read()` 都将立即返回 `Ok(0)`。
+用在 [`TcpStream`] 实例一起时，表示这个socket的半双工读操作已关闭。
 
 ```rust
 use tokio::fs::File;
@@ -48,8 +45,7 @@ async fn main() -> io::Result<()> {
 
 ## `async fn read_to_end()`
 
-[`AsyncReadExt::read_to_end`][read_to_end] reads all bytes from the stream until
-EOF.
+[`AsyncReadExt::read_to_end`][read_to_end] 从流中读取全部数据直到EOF。
 
 ```rust
 use tokio::io::{self, AsyncReadExt};
@@ -70,8 +66,7 @@ async fn main() -> io::Result<()> {
 
 ## `async fn write()`
 
-[`AsyncWriteExt::write`][write] writes a buffer into the writer, returning how
-many bytes were written.
+[`AsyncWriteExt::write`][write] 将一个数据缓冲写入到writer对象，返回写入的数据量。
 
 ```rust
 use tokio::io::{self, AsyncWriteExt};
@@ -93,8 +88,7 @@ async fn main() -> io::Result<()> {
 
 ## `async fn write_all()`
 
-[`AsyncWriteExt::write_all`][write_all] writes the entire buffer into the
-writer.
+[`AsyncWriteExt::write_all`][write_all] 将全部缓冲写入到writer对象。
 
 ```rust
 use tokio::io::{self, AsyncWriteExt};
@@ -111,16 +105,13 @@ async fn main() -> io::Result<()> {
 # }
 ```
 
-Both traits include a number of other helpful methods. See the API docs for a
-comprehensive list.
+这两个traits特性也包含了其他有帮助的方法。可用API文档中得到更综合的列表。
 
-# Helper functions
+# 帮助函数
 
-Additionally, just like `std`, the [`tokio::io`] module contains a number of
-helpful utility functions as well as APIs for working with [standard input][stdin],
-[standard output][stdout] and [standard error][stderr]. For example,
-[`tokio::io::copy`][copy] asynchronously copies the entire contents of a reader
-into a writer.
+此外，就行标准库 `std`， [`tokio::io`] 模块包含很多有帮助的函数就像API一样能与[标准输入][stdin],
+[标准输出][stdout] 和 [标准错误][stderr]一起使用。例如，[`tokio::io::copy`][copy] 
+能异步地从reader对象到writer对象拷贝所有内容。
 
 ```rust
 use tokio::fs::File;
