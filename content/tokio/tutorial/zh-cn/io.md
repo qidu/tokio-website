@@ -331,14 +331,11 @@ use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
 let mut buf = vec![0; 1024];
 ```
 
-A stack buffer is explicitly avoided. Recall from [earlier][send], we noted that
-all task data that lives across calls to `.await` must be stored by the task. In
-this case, `buf` is used across `.await` calls. All task data is stored in a
-single allocation. You can think of it as an `enum` where each variant is the
-data that needs to be stored for a specific call to `.await`.
+明显避免了使用栈缓存。回忆[之前][send]，我们注意所有跨过`.await`调用的任务数据
+需要被任务保存。在这里，`buf`跨过`.await`调用。所有任务数据被保存在单次分配里。
+你可以把它看作一个`enum` ，每个变种就是数据，需要被保存以供特定的`.await`调用。
 
-If the buffer is represented by a stack array, the internal structure for tasks
-spawned per accepted socket might look something like:
+如果缓冲用栈数组表达，每接收一个连接所创建任务的内部结构看起来如下：
 
 ```rust,compile_fail
 struct Task {
@@ -357,24 +354,19 @@ struct Task {
 }
 ```
 
-If a stack array is used as the buffer type, it will be stored *inline* in the
-task structure. This will make the task structure very big. Additionally, buffer
-sizes are often page sized. This will, in turn, make `Task` an awkward size:
-`$page-size + a-few-bytes`.
+如果用栈数组所谓缓冲，它需要被保存在任务的内部结构 *inline* 上。这会导致任务结构
+极其大。此外，缓冲大小通常是以页为单位的。这将相应的导致`Task`是一个尴尬的大小：
+`$page-size + a-few-bytes`。
 
-The compiler optimizes the layout of async blocks further than a basic `enum`.
-In practice, variables are not moved around between variants as would be
-required with an `enum`. However, the task struct size is at least as big as the
-largest variable.
+编译器优化异步块的布局远比`enum`复杂。实际上，变量没有像在`enum`中一样在变种中迁移。
+尽管如此，任务结构大小最小像最大的变量一样大。
 
-Because of this, it is usually more efficient to use a dedicated allocation for
-the buffer.
+由此，通常专门分配的缓冲是更有效的。
 
-## Handling EOF
+## 处理结束 EOF
 
-When the read half of the TCP stream is shut down, a call to `read()` returns
-`Ok(0)`. It is important to exit the read loop at this point. Forgetting to
-break from the read loop on EOF is a common source of bugs.
+当TCP流的读操作关闭，调用`read()` 会返回`Ok(0)`。此时退出read循环就很重要。
+EOF时忘记退出read循环是一个常见错误源。
 
 ```rust
 # use tokio::io::AsyncReadExt;
@@ -393,11 +385,10 @@ loop {
 # }
 ```
 
-Forgetting to break from the read loop usually results in a 100% CPU infinite
-loop situation. As the socket is closed, `socket.read()` returns immediately.
-The loop then repeats forever.
+忘记退出read循环通常导致100% CPU 无限循环占用。由于socket已关闭，`socket.read()`
+立即返回，循环loop继续重复迭代。
 
-Full code can be found [here][full_manual].
+完整的代码可以在 [这里][full_manual]得到。
 
 [full_manual]: https://github.com/tokio-rs/website/blob/master/tutorial-code/io/src/echo-server.rs
 [full_copy]: https://github.com/tokio-rs/website/blob/master/tutorial-code/io/src/echo-server-copy.rs
