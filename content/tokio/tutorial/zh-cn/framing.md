@@ -179,8 +179,7 @@ pub async fn read_frame(&mut self)
 
 当读取数据时，调用了 `read_buf` 。这个函数使用的参数实现了 [`bytes`] crate中的 [`BufMut`] 。
 
-首先，考虑我们如何用`read()`实现同样的读取循环。
-`Vec<u8>` could be used instead of `BytesMut`.
+首先，考虑我们如何用`read()`实现同样的读取循环。可用`Vec<u8>` 来代替`BytesMut`。
 
 ```rust
 use tokio::net::TcpStream;
@@ -250,49 +249,40 @@ pub async fn read_frame(&mut self)
 # }
 ```
 
-When working with byte arrays and `read`, we must also maintain a cursor
-tracking how much data has been buffered. We must make sure to pass the empty
-portion of the buffer to `read()`. Otherwise, we would overwrite buffered data.
-If our buffer gets filled up, we must grow the buffer in order to keep reading.
-In `parse_frame()` (not included), we would need to parse data contained by
-`self.buffer[..self.cursor]`.
+当使用字节数组和 `read`时，我们需要自行维护一个位置变量来跟踪缓冲了多少数据。
+我们必须确保 `read()`数据填充到缓冲空间的空白区域。否则，就覆盖已缓冲的数据。
+如果缓冲填满，需要扩展它的空间以便继续读取数据。在`parse_frame()` (未引入)里，
+我们需要从`self.buffer[..self.cursor]`这里开始解析数据。
 
-Because pairing a byte array with a cursor is very common, the `bytes` crate
-provides an abstraction representing a byte array and cursor. The `Buf` trait is
-implemented by types from which data can be read. The `BufMut` trait is
-implemented by types into which data can be written. When passing a `T: BufMut`
-to `read_buf()`, the buffer's internal cursor is automatically updated by
-`read_buf`. Because of this, in our version of `read_frame`, we do not need to
-manage our own cursor.
+因为与字节数据一起管理位置变量很普遍，`bytes` crate提供了对字节数据和位置变量的抽象封装。
+`Buf` 特性就是作为一个能管理数据读取的缓冲类型。而 `BufMut` 特性作为可写数据的缓冲类型。
+当传递`T: BufMut`给 `read_buf()`函数时，缓冲的内部位置变量在`read_buf`后被更新。
+因此在我们前面的 `read_frame`中不需要自己管理缓冲位置变量。
 
-Additionally, when using `Vec<u8>`, the buffer must be **initialized**. `vec![0;
-4096]` allocates an array of 4096 bytes and writes zero to every entry. When
-resizing the buffer, the new capacity must also be initialized with zeros. The
-initialization process is not free. When working with `BytesMut` and `BufMut`,
-capacity is **uninitialized**. The `BytesMut` abstraction prevents us from
-reading the uninitialized memory. This lets us avoid the initialization step.
+此外，当使用了 `Vec<u8>`，缓冲需要被初始化。调用`vec![0;4096]` 将分配一个4096字节长的数组，
+并被初始化为全是0。当扩展缓冲时，新分配的空间也需要被初始化为0。初始化的动作并非无成本。当
+采用`BytesMut` 和 `BufMut`时，缓冲空间没有被初始化。`BytesMut` 抽象会阻止我们读到未初始化
+的内存区域。这让我们避免了调用初始化过程。
 
 [`BufMut`]: https://docs.rs/bytes/1/bytes/trait.BufMut.html
 [`bytes`]: https://docs.rs/bytes/
 
-# Parsing
+# 解析
 
-Now, let's look at the `parse_frame()` function. Parsing is done in two steps.
+现在，我们看看 `parse_frame()` 函数。通过两个步骤来解析：
 
-1. Ensure a full frame is buffered and find the end index of the frame.
-2. Parse the frame.
+1. 确保已缓冲了完整的帧，帧结尾序号被找到；
+2. 解析这个帧；
 
-The `mini-redis` crate provides us with a function for both of these steps:
+`mini-redis` crate 提供了实现那两步的函数:
 
 1. [`Frame::check`](https://docs.rs/mini-redis/0.4/mini_redis/frame/enum.Frame.html#method.check)
 2. [`Frame::parse`](https://docs.rs/mini-redis/0.4/mini_redis/frame/enum.Frame.html#method.parse)
 
-We will also reuse the `Buf` abstraction to help. A `Buf` is passed into
-`Frame::check`. As the `check` function iterates the passed in buffer, the
-internal cursor will be advanced. When `check` returns, the buffer's internal
-cursor points to the end of the frame.
+我们将复用 `Buf` 抽象来提供帮助。`Buf` 被传递给`Frame::check`。在 `check` 函数在传入的缓冲上迭代时，
+内部位置指针将被前移。当`check` 返回时，位置指针指向了帧结尾。
 
-For the `Buf` type, we will use [`std::io::Cursor<&[u8]>`][`Cursor`].
+对应 `Buf` 类型，我们使用 [`std::io::Cursor<&[u8]>`][`Cursor`].
 
 ```rust
 use mini_redis::{Frame, Result};
@@ -339,24 +329,20 @@ fn parse_frame(&mut self)
 # }
 ```
 
-The full [`Frame::check`][check] function can be found [here][check]. We will
-not cover it in its entirety.
+完整的 [`Frame::check`][check] 函数实现能在 [这里][check]找到。我们不涉及它的完整实现。
 
-The relevant thing to note is that `Buf`'s "byte iterator" style APIs are used.
-These fetch data and advance the internal cursor. For example, to parse a frame,
-the first byte is checked to determine the type of the frame. The function used
-is [`Buf::get_u8`]. This fetches the byte at the current cursor's position and
-advances the cursor by one.
+相关需要注意的是，用到了 `Buf`的 "byte iterator" 风格的API。它们用来读取数据和前移内部
+位置指针。例如，为传递帧，检查首字节以确定这个帧的类型。使用的函数是 [`Buf::get_u8`]。
+它读取指针位置的字节并前移指针到下一个字节位置。
 
-There are more useful methods on the [`Buf`] trait. Check the [API docs][`Buf`]
-for more details.
+在[`Buf`] trait里有更多有用的函数。从 [API docs][`Buf`]可以得到更多细节。
 
 [check]: https://github.com/tokio-rs/mini-redis/blob/tutorial/src/frame.rs#L63-L100
 [`Buf::get_u8`]: https://docs.rs/bytes/1/bytes/buf/trait.Buf.html#method.get_u8
 [`Buf`]: https://docs.rs/bytes/1/bytes/buf/trait.Buf.html
 [`Cursor`]: https://doc.rust-lang.org/stable/std/io/struct.Cursor.html
 
-# Buffered writes
+# 有缓冲的写操作
 
 The other half of the framing API is the `write_frame(frame)` function. This
 function writes an entire frame to the socket. In order to minimize `write`
