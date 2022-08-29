@@ -267,11 +267,10 @@ tokio::spawn(async move {
 
 ## 手动拷贝
 
-Now let's look at how we would write the echo server by copying the data
-manually. To do this, we use [`AsyncReadExt::read`][read] and
-[`AsyncWriteExt::write_all`][write_all].
+现在看看如何用手动拷贝数据来实现echo服务器。我们使用 [`AsyncReadExt::read`][read] 和
+[`AsyncWriteExt::write_all`][write_all]。
 
-The full echo server is as follows:
+完整的echo服务器代码如下:
 
 ```rust
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
@@ -314,20 +313,19 @@ async fn main() -> io::Result<()> {
 # }
 ```
 
-(You can put this code into `src/bin/echo-server.rs` and launch it with
+(你可以将代码放在 `src/bin/echo-server.rs` 并用这个命令启动
 `cargo run --bin echo-server`).
 
-Let's break it down. First, since the `AsyncRead` and `AsyncWrite` utilities are
-used, the extension traits must be brought into scope.
+让我们来分解过程。首先，由于用到了`AsyncRead` 和 `AsyncWrite`工具类，需要也引入
+扩展特性traits。
 
 ```rust
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
 ```
 
-## Allocating a buffer
+## 分配缓冲
 
-The strategy is to read some data from the socket into a buffer then write the
-contents of the buffer back to the socket.
+这里策略是，从socket中读取数据到缓冲里，然后再将其写出到socket中。
 
 ```rust
 let mut buf = vec![0; 1024];
