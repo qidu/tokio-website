@@ -344,30 +344,21 @@ fn parse_frame(&mut self)
 
 # 有缓冲的写操作
 
-The other half of the framing API is the `write_frame(frame)` function. This
-function writes an entire frame to the socket. In order to minimize `write`
-syscalls, writes will be buffered. A write buffer is maintained and frames are
-encoded to this buffer before being written to the socket. However, unlike
-`read_frame()`, the entire frame is not always buffered to a byte array before
-writing to the socket.
+组帧API的另一部分内容是 `write_frame(frame)` 函数。它写一整个帧到socket中。为最小化
+`write`系统调用，写操作会缓冲数据。需要维护一个写缓冲，每个帧在写到socket之前都被编码到该缓冲。 
+尽快如此，不像`read_frame()`，完整的帧在写入socket时并不总是会先缓冲下来。
 
-Consider a bulk stream frame. The value being written is `Frame::Bulk(Bytes)`.
-The wire format of a bulk frame is a frame head, which consists of the `$`
-character followed by the data length in bytes. The majority of the frame is the
-contents of the `Bytes` value. If the data is large, copying it to an
-intermediate buffer would be costly.
+考虑零散的帧，要写的是`Frame::Bulk(Bytes)`。在网络上传输的帧需要一个头，它由`$`跟随着
+数据长度。帧的主要部分是`Bytes` 值。如果数据很大，拷贝到中间缓冲就很耗时。
 
-To implement buffered writes, we will use the [`BufWriter` struct][buf-writer].
-This struct is initialized with a `T: AsyncWrite` and implements `AsyncWrite`
-itself. When `write` is called on `BufWriter`, the write does not go directly to
-the inner writer, but to a buffer. When the buffer is full, the contents are
-flushed to the inner writer and the inner buffer is cleared. There are also
-optimizations that allow bypassing the buffer in certain cases.
+为实现有缓冲的写操作，我们使用 [`BufWriter` struct][buf-writer]。这结构体用 `T: AsyncWrite` 
+初始化且实现了 `AsyncWrite`特性。当调用`BufWriter`的 `write` 时，不会直通到内部writer对象上，
+而是写到内部缓冲上。如果缓冲已满，则将数据刷到内部writer上并清空内部buffer。在特定条件下也有绕
+过内部缓冲的方法。
 
-We will not attempt a full implementation of `write_frame()` as part of the
-tutorial. See the full implementation [here][write-frame].
+我们将不在本指南中实现完整的 `write_frame()` 例子。可以从 [这里][write-frame]找到它的完整实现。
 
-First, the `Connection` struct is updated:
+首先，更新 `Connection` 结构体:
 
 
 ```rust
@@ -390,7 +381,7 @@ impl Connection {
 }
 ```
 
-Next, `write_frame()` is implemented.
+接着，实现 `write_frame()`。
 
 ```rust
 use tokio::io::{self, AsyncWriteExt};
@@ -441,26 +432,20 @@ async fn write_frame(&mut self, frame: &Frame)
 # }
 ```
 
-The functions used here are provided by [`AsyncWriteExt`]. They are available on
-`TcpStream` as well, but it would not be advisable to issue single byte writes
-without the intermediate buffer.
+这里用到的函数由 [`AsyncWriteExt`]提供。在`TcpStream`上都可以调用。但直接写字节而不用中间缓冲
+就是不明智的了。
 
-* [`write_u8`] writes a single byte to the writer.
-* [`write_all`] writes the entire slice to the writer.
-* [`write_decimal`] is implemented by mini-redis.
+* [`write_u8`] 写一个字节
+* [`write_all`] 写整个切片
+* [`write_decimal`] 由 mini-redis 实现的
 
-The function ends with a call to `self.stream.flush().await`. Because
-`BufWriter` stores writes in an intermediate buffer, calls to `write` do not
-guarantee that the data is written to the socket. Before returning, we want the
-frame to be written to the socket. The call to `flush()` writes any data pending
-in the buffer to the socket.
+整个函数结束在调用 `self.stream.flush().await`后。因为`BufWriter` 保存了数据在内部缓冲，
+调用`write` 并不确保数据被写到socket上。在退出前，我们希望数据全部写入socket。调用 `flush()`
+会写出所有缓冲的数据。
 
-Another alternative would be to **not** call `flush()` in `write_frame()`.
-Instead, provide a `flush()` function on `Connection`. This would allow the
-caller to write queue multiple small frames in the write buffer then write them
-all to the socket with one `write` syscall. Doing this complicates the
-`Connection` API. Simplicity is one of Mini-Redis' goals, so we decided to
-include the `flush().await` call in `fn write_frame()`.
+如果不在`write_frame()`函数中调用`flush()`，也可以在`Connection`提供`flush()` 函数来替代。
+这允许调用者将缓冲中队列中的多个帧通过一次系统调用`write`全写入socket。但这么做就使`Connection`的
+API复杂化了。间接性是Mini-Redis的目标，所以我们决定在`fn write_frame()`中调用`flush().await`。
 
 
 [buf-writer]: https://docs.rs/tokio/1/tokio/io/struct.BufWriter.html
