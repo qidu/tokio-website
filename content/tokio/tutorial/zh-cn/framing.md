@@ -1,11 +1,9 @@
 ---
-title: "Framing"
+title: "组帧"
 ---
 
-We will now apply what we just learned about I/O and implement the Mini-Redis
-framing layer. Framing is the process of taking a byte stream and converting it
-to a stream of frames. A frame is a unit of data transmitted between two peers.
-The Redis protocol frame is defined as follows:
+现在我们将应用之前学的I/O操作来实现Mini-Redis的拆组帧层。组帧是将字节流转换成帧结构流。
+帧是在两个节点间传输时的数据单位。Redis的帧协议定义如下:
 
 ```rust
 use bytes::Bytes;
@@ -20,10 +18,9 @@ enum Frame {
 }
 ```
 
-Note how the frame only consists of data without any semantics. The command
-parsing and implementation happen at a higher level.
+注意这里帧只是由数据组成而没有语义。命令的解析和实现是在更上层进行的。
 
-For HTTP, a frame might look like:
+类比HTTP协议，它的一个帧类似如下：
 
 ```rust
 # use bytes::Bytes;
@@ -50,8 +47,8 @@ enum HttpFrame {
 }
 ```
 
-To implement framing for Mini-Redis, we will implement a `Connection` struct
-that wraps a `TcpStream` and reads/writes `mini_redis::Frame` values.
+为实现Mini-Redis帧过程，我们将用`Connection` 结构来包装一个`TcpStream`来
+读/写 `mini_redis::Frame` 值。
 
 ```rust
 use tokio::net::TcpStream;
@@ -83,27 +80,23 @@ impl Connection {
 }
 ```
 
-You can find the details of the Redis wire protocol [here][proto]. The full
-`Connection` code is found [here][full].
+你可以在 [这里][proto]得到Redis详细协议。完整的`Connection` 代码在 [这里][full].
 
 [proto]: https://redis.io/topics/protocol
 [full]: https://github.com/tokio-rs/mini-redis/blob/tutorial/src/connection.rs
 
-# Buffered reads
+# 有缓冲的读操作
 
-The `read_frame` method waits for an entire frame to be received before
-returning. A single call to `TcpStream::read()` may return an arbitrary amount
-of data. It could contain an entire frame, a partial frame, or multiple frames.
-If a partial frame is received, the data is buffered and more data is read from
-the socket.  If multiple frames are received, the first frame is returned and
-the rest of the data is buffered until the next call to `read_frame`.
+`read_frame` 方法在返回前会等待接收到一个完整的帧。单独调用`TcpStream::read()` 会返回
+任意数量的字节。它可能包含一个帧、帧的一部分或几个帧。如果收到的只是帧的一部分，先缓存住
+这些数据再继续从socket上读。如果收到了多个帧，先返回第一个帧，并将剩下的帧缓存住等待下一
+次调用`read_frame`。
 
-To implement this, `Connection` needs a read buffer field. Data is read from the
-socket into the read buffer. When a frame is parsed, the corresponding data is
-removed from the buffer.
+为实现这个功能， `Connection` 需要一个数据缓冲。从socket中读数据到缓冲里。当解析到一个帧，
+对应的数据会从缓冲里删除。
 
-We will use [`BytesMut`][BytesMutStruct] as the buffer type. This is a mutable version of
-[`Bytes`][BytesStruct].
+我们将使用 [`BytesMut`][BytesMutStruct] 作为缓冲类型。这是可改变数据的[`Bytes`][BytesStruct]
+缓冲版本。
 
 ```rust
 use bytes::BytesMut;
@@ -125,7 +118,7 @@ impl Connection {
 }
 ```
 
-Next, we implement the `read_frame()` method.
+接着，实现 `read_frame()` 方法。
 
 ```rust
 use tokio::io::AsyncReadExt;
@@ -171,7 +164,7 @@ pub async fn read_frame(&mut self)
 # }
 ```
 
-Let's break this down. The `read_frame` method operates in a loop. First,
+让我们来分解这个过程。The `read_frame` method operates in a loop. First,
 `self.parse_frame()` is called. This will attempt to parse a redis frame from
 `self.buffer`. If there is enough data to parse a frame, the frame is returned
 to the caller of `read_frame()`.Otherwise, we attempt to read more data from the
