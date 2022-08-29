@@ -1,16 +1,14 @@
 ---
-title: "Async in depth"
+title: "深入异步"
 ---
 
-At this point, we have completed a fairly comprehensive tour of asynchronous
-Rust and Tokio. Now we will dig deeper into Rust's asynchronous runtime model.
-At the very beginning of the tutorial, we hinted that asynchronous Rust takes a
-unique approach. Now, we explain what that means.
+截至目前，我们已经完成了对Rust和Tokio非常综合的案例学习。现在我们将更深入到Rust的异步编程
+运行时模型。
+在本指南的开头处，我们提到Rust异步编程采用了一个独特的办法。现在我们来解释为什么独特。
 
-# Futures
+# Futures 延迟执行 （承诺、约定、期约）
 
-As a quick review, let's take a very basic asynchronous function. This is
-nothing new compared to what the tutorial has covered so far.
+快速过一下基本异步函数，它没有比指南中学过的例子更复杂。
 
 ```rust
 use tokio::net::TcpStream;
@@ -22,7 +20,7 @@ async fn my_async_fn() {
 }
 ```
 
-We call the function and it returns some value. We call `.await` on that value.
+我们调用该函数它返回一些值。我们在该值上继续调用`.await`。
 
 ```rust
 # async fn my_async_fn() {}
@@ -36,11 +34,10 @@ async fn main() {
 }
 ```
 
-The value returned by `my_async_fn()` is a future. A future is a value that
-implements the [`std::future::Future`][trait] trait provided by the standard
-library. They are values that contain the in-progress asynchronous computation.
+函数`my_async_fn()`的返回值就是一个future。future是一个实现了[`std::future::Future`][trait] trait 的值，
+它由标准库提供。它包含了待处理的异步计算的值。
 
-The [`std::future::Future`][trait] trait definition is:
+标准库里 [`std::future::Future`][trait] trait 定义如下:
 
 ```rust
 use std::pin::Pin;
@@ -54,20 +51,15 @@ pub trait Future {
 }
 ```
 
-The [associated type][assoc] `Output` is the type that the future produces once
-it completes. The [`Pin`][pin] type is how Rust is able to support borrows in
-`async` functions. See the [standard library][pin] documentation for more
-details.
+[关联类型][assoc] `Output` 值是由future在完成后产生的。[`Pin`][pin] 类型是Rust如何
+支持在`async` 函数中借用变量的基础。从 [标准库][pin] 文档中参考更多细节。
 
-Unlike how futures are implemented in other languages, a Rust future does not
-represent a computation happening in the background, rather the Rust future
-**is** the computation itself. The owner of the future is responsible for
-advancing the computation by polling the future. This is done by calling
-`Future::poll`.
+不像其他语言中的futures实现，Rust的future并不表示一个在背后运行的计算过程，相反Rust的future
+只表示计算过程本身。future的所有者负责通过调用`Future::poll`操作来执行这个计算过程。
 
-## Implementing `Future`
+## 实现 `Future`
 
-Let's implement a very simple future. This future will:
+我们来实现一个简单的future:
 
 1. Wait until a specific instant in time.
 2. Output some text to STDOUT.
