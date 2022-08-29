@@ -164,27 +164,22 @@ pub async fn read_frame(&mut self)
 # }
 ```
 
-让我们来分解这个过程。The `read_frame` method operates in a loop. First,
-`self.parse_frame()` is called. This will attempt to parse a redis frame from
-`self.buffer`. If there is enough data to parse a frame, the frame is returned
-to the caller of `read_frame()`.Otherwise, we attempt to read more data from the
-socket into the buffer. After reading more data, `parse_frame()` is called
-again. This time, if enough data has been received, parsing may succeed.
+让我们来分解这个过程。在循环中执行`read_frame`。首先，调用`self.parse_frame()` ，
+这会尝试从`self.buffer`中解析一个帧。如果有充足的数据可解析出帧，就将它返回给
+`read_frame()`的调用者。否则，我们尝试从socket中读出更多数据保存到缓冲里。如果
+读到更多数据，继续调用 `parse_frame()` ，这次要是数据充足，就可以解析出帧。
 
-When reading from the stream, a return value of `0` indicates that no more data
-will be received from the peer. If the read buffer still has data in it, this
-indicates a partial frame has been received and the connection is being
-terminated abruptly. This is an error condition and `Err` is returned.
+当从流中读数据时，返回值 `0` 暗示对端不会再有更多数据了。如果缓冲里还有数据，说明
+只收到帧的一部分，连接被意外中断了。这满足出错条件，所以返回了`Err`。
 
 [BytesMutStruct]: https://docs.rs/bytes/1/bytes/struct.BytesMut.html
 [BytesStruct]: https://docs.rs/bytes/1/bytes/struct.Bytes.html
 
-## The `Buf` trait
+## `Buf` 特性
 
-When reading from the stream, `read_buf` is called. This version of the read
-function takes a value implementing [`BufMut`] from the [`bytes`] crate.
+当读取数据时，调用了 `read_buf` 。这个函数使用的参数实现了 [`bytes`] crate中的 [`BufMut`] 。
 
-First, consider how we would implement the same read loop using `read()`.
+首先，考虑我们如何用`read()`实现同样的读取循环。
 `Vec<u8>` could be used instead of `BytesMut`.
 
 ```rust
@@ -208,7 +203,7 @@ impl Connection {
 }
 ```
 
-And the `read_frame()` function on `Connection`:
+添加 `read_frame()` 函数到`Connection`:
 
 ```rust
 use mini_redis::{Frame, Result};
