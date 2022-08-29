@@ -61,9 +61,9 @@ pub trait Future {
 
 我们来实现一个简单的future:
 
-1. Wait until a specific instant in time.
-2. Output some text to STDOUT.
-3. Yield a string.
+1. 等待到指定时刻
+2. 输出一些文本到STDOUT
+3. 产出一个字符串
 
 ```rust
 use std::future::Future;
@@ -102,12 +102,11 @@ async fn main() {
 }
 ```
 
-## Async fn as a Future
+## Async fn 作为 Future
 
-In the main function, we instantiate the future and call `.await` on it. From
-async functions, we may call `.await` on any value that implements `Future`. In
-turn, calling an `async` function returns an anonymous type that implements
-`Future`. In the case of `async fn main()`, the generated future is roughly:
+在main函数中，我们实例化了future 并调用 `.await`。在异步函数里，我们可以在任何实现过`Future`
+的值上调用 `.await`。相应的，调用`async` 函数返回实现了`Future`的匿名类型值。而调用 `async fn main()`，
+大约生成如下future:
 
 ```rust
 use std::future::Future;
@@ -168,7 +167,7 @@ impl Future for MainFuture {
 }
 ```
 
-Rust futures are **state machines**. Here, `MainFuture` is represented as an
+Rust futures 是状态机 **state machines**。Here, `MainFuture` is represented as an
 `enum` of the future's possible states. The future starts in the `State0` state.
 When `poll` is invoked, the future attempts to advance its internal state as
 much as possible. If the future is able to complete, `Poll::Ready` is returned
