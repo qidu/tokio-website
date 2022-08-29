@@ -129,40 +129,37 @@ async fn main() -> io::Result<()> {
 # }
 ```
 
-Note that this uses the fact that byte arrays also implement `AsyncRead`.
+注意这是因为字节数组也实现了 `AsyncRead`特性的前提。
 
-# Echo server
+# Echo 服务器
 
-Let's practice doing some asynchronous I/O. We will be writing an echo server.
+让我们实现点什么功能来练习异步I/O。我们将编译一个echo服务器。
 
-The echo server binds a `TcpListener` and accepts inbound connections in a loop.
-For each inbound connection, data is read from the socket and written
-immediately back to the socket. The client sends data to the server and receives
-the exact same data back.
+这个echo服务器会绑定 `TcpListener`，并在一个循环中接收进入的连接。对每个连接，
+从它socket上读取数据并立即写入socket上。客户端发送数据并接收到服务器端完整的响应。
 
-We will implement the echo server twice, using slightly different strategies.
+我们将采用不用的策略实现echo服务器两次。
 
-## Using `io::copy()`
+## 采用 `io::copy()`
 
-To start, we will implement the echo logic using the [`io::copy`][copy] utility.
+我们将采用 [`io::copy`][copy] 工具来实现echo逻辑。
 
-You can write up this code in a new binary file:
+你可以创建如下文件:
 
 ```text
 touch src/bin/echo-server-copy.rs
 ```
 
-That you can launch (or just check the compilation) with:
+用如下命令来运行 (或检查兼容性) :
 
 ```text
 cargo run --bin echo-server-copy
 ```
 
-You will be able to try the server using a standard command-line tool such as `telnet`, or by writing
-a simple client like the one found in the documentation for [`tokio::net::TcpStream`][tcp_example].
+你也可以尝试标准命令行工具如 `telnet`来连接服务器，或用
+[`tokio::net::TcpStream`][tcp_example]的例子编写一个简单的客户端。
 
-This is a TCP server and needs an accept loop. A new task is spawned to process
-each accepted socket.
+这是一个有接收连接循环的TCP服务器。每接收一个新连接就生成一个新任务来处理它。
 
 ```rust
 use tokio::io;
@@ -184,29 +181,24 @@ async fn main() -> io::Result<()> {
 # }
 ```
 
-As seen earlier, this utility function takes a reader and a writer and copies
-data from one to the other. However, we only have a single `TcpStream`. This
-single value implements **both** `AsyncRead` and `AsyncWrite`. Because
-`io::copy` requires `&mut` for both the reader and the writer, the socket cannot
-be used for both arguments.
+如前面，这工具函数可以使用一对reader和writer，并从前者拷贝数据到后者。但我们只有一个
+`TcpStream`对象，它同时实现了`AsyncRead` 和 `AsyncWrite`特性。由于`io::copy` 要求
+reader和writer都是`&mut`类型参数，这个socket对象就不能用在这里。
 
 ```rust,compile_fail
 // This fails to compile
 io::copy(&mut socket, &mut socket).await
 ```
 
-## Splitting a reader + writer
+## 拆分 reader 和 writer
 
-To work around this problem, we must split the socket into a reader handle and a
-writer handle. The best way to split a reader/writer combo depends on the
-specific type.
+为解决这个问题，我们将把这个socket拆分成一对reader和writer句柄。拆分成reader/writer的
+最佳方式是用特定的组合类型。
 
-Any reader + writer type can be split using the [`io::split`][split] utility.
-This function takes a single value and returns separate reader and  writer
-handles. These two handles can be used independently, including from separate
-tasks.
+任何reader + writer 类型可以用[`io::split`][split] 工具类来拆分。它使用单个参数并返回
+一对reader和writer句柄。它们可以被分开在不同的任务中使用。
 
-For example, the echo client could handle concurrent reads and writes like this:
+例如，echo客户端可以采用如下方式并发的使用读和写:
 
 ```rust
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
@@ -245,20 +237,17 @@ async fn main() -> io::Result<()> {
 # }
 ```
 
-Because `io::split` supports **any** value that implements `AsyncRead +
-AsyncWrite` and returns independent handles, internally `io::split` uses an
-`Arc` and a `Mutex`. This overhead can be avoided with `TcpStream`. `TcpStream`
-offers two specialized split functions.
+由于 `io::split` 支持任何实现了`AsyncRead + AsyncWrite`特性的类型，返回读写独立的句柄，
+`io::split`内部使用了`Arc` 和 `Mutex`。 `TcpStream`可以避免这个开销，因为`TcpStream`
+提供了两个特殊的split函数。
 
-[`TcpStream::split`] takes a **reference** to the stream and returns a reader
-and writer handle. Because a reference is used, both handles must stay on the
-**same** task that `split()` was called from. This specialized `split` is
-zero-cost. There is no `Arc` or `Mutex` needed. `TcpStream` also provides
-[`into_split`] which supports handles that can move across tasks at the cost of
-only an `Arc`.
+[`TcpStream::split`] 使用一个stream引用作为参数，并返回一对reader和writer句柄。由于
+使用了引用，两个句柄需要用在split它们的相同的任务中。这个特殊的`split`函数调用是零成本的
+zero-cost。这里没有`Arc` 或 `Mutex`调用。`TcpStream` 也提供[`into_split`]函数，它返回
+的句柄支持以`Arc`成本被迁移到不用的任务中。
 
-Because `io::copy()` is called on the same task that owns the `TcpStream`, we
-can use [`TcpStream::split`]. The task that processes the echo logic in the server becomes:
+因为 `io::copy()` 被在拥有`TcpStream`对象的任务中调用, 我们可以使用 [`TcpStream::split`]。
+在服务端处理echo逻辑的任务如下：
 
 ```rust
 # use tokio::io;
@@ -274,9 +263,9 @@ tokio::spawn(async move {
 # }
 ```
 
-You can find the entire code [here][full_copy].
+你可以在[这里][full_copy]得到完整代码。
 
-## Manual copying
+## 手动拷贝
 
 Now let's look at how we would write the echo server by copying the data
 manually. To do this, we use [`AsyncReadExt::read`][read] and
