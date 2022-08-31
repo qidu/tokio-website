@@ -167,21 +167,16 @@ impl Future for MainFuture {
 }
 ```
 
-Rust futures 是状态机 **state machines**。Here, `MainFuture` is represented as an
-`enum` of the future's possible states. The future starts in the `State0` state.
-When `poll` is invoked, the future attempts to advance its internal state as
-much as possible. If the future is able to complete, `Poll::Ready` is returned
-containing the output of the asynchronous computation.
+Rust futures 是状态机 **state machines**。这里 `MainFuture` 被表达为future可能状态的`enum`类型。
+这future 从状态 `State0` 开始。当调用其 `poll` 方法时，future尝试尽可能迁移其内部状态。如果feature
+能执行完，就将这异步执行的结果封装在状态 `Poll::Ready` 里一起返回。
 
-If the future is **not** able to complete, usually due to resources it is
-waiting on not being ready, then `Poll::Pending` is returned. Receiving
-`Poll::Pending` indicates to the caller that the future will complete at a later
-time and the caller should invoke `poll` again later.
+如果该future还无法完成，通常因为还在等待某些未就绪的资源，那么返回 `Poll::Pending` 。当收到
+`Poll::Pending` 返回值时，表示该future将会在以后某个时间点完成，调用者需要在后面继续调用 `poll`。
 
-We also see that futures are composed of other futures. Calling `poll` on the
-outer future results in calling the inner future's `poll` function.
+我们也需要注意有些futures会组合其他futures。调用外层future的`poll`会导致进一步调用到内层future的相应函数。
 
-# Executors
+# Executors 执行器
 
 Asynchronous Rust functions return futures. Futures must have `poll` called on
 them to advance their state. Futures are composed of other futures. So, the
