@@ -274,14 +274,12 @@ fn poll(self: Pin<&mut Self>, cx: &mut Context)
 ```
 
 `Context` 的`poll` 参数有 `waker()` 方法。这个方法会返回一个[`Waker`] 约束在当前任务上. [`Waker`] 有一个 `wake()` 方法。
-调用这个方法，会传递
-this method signals to the executor that the associated task should be scheduled
-for execution. Resources call `wake()` when they transition to a ready state to
-notify the executor that polling the task will be able to make progress.
+调用这个方法，会传递信号告诉执行器与它关联的任务应该被再次调度执行了。资源调用 `wake()` 当它们转换到就绪状态以通知执行器此时
+来poll这个任务可以转换到新状态。
 
-## Updating `Delay`
+## 更新 `Delay`
 
-We can update `Delay` to use wakers:
+我们可以用waker更新 `Delay`:
 
 ```rust
 use std::future::Future;
@@ -325,22 +323,18 @@ impl Future for Delay {
 }
 ```
 
-Now, once the requested duration has elapsed, the calling task is notified and
-the executor can ensure the task is scheduled again. The next step is to update
-mini-tokio to listen for wake notifications.
+现在，一旦指定的时间过去，调用中的任务被通知，执行器会确保该任务再次调度执行。下一步是
+更新 mini-tokio 去监听唤醒通知。
 
-There are still a few remaining issues with our `Delay` implementation. We will
-fix them later.
+我们 `Delay` 实现仍有一些遗留问题，将在后面再修复它们。
 
-[[warning]]
-| When a future returns `Poll::Pending`, it **must** ensure that the waker is
-| signalled at some point. Forgetting to do this results in the task hanging
-| indefinitely.
+[[警告]]
+| 当future 返回 `Poll::Pending`，它**必须**确定waker会再某个时间点被唤醒。 
+| 忘记这个步骤会导致任务被无限期挂起。
 |
-| Forgetting to wake a task after returning `Poll::Pending` is a common
-| source of bugs.
+| 在返回 `Poll::Pending` 后忘记唤醒任务是常见错误。
 
-Recall the first iteration of `Delay`. Here was the future implementation:
+回忆首次迭代 `Delay`。 以下是 future 实现:
 
 ```rust
 # use std::future::Future;
@@ -366,19 +360,14 @@ impl Future for Delay {
 }
 ```
 
-Before returning `Poll::Pending`, we called `cx.waker().wake_by_ref()`. This is
-to satisfy the future contract. By returning `Poll::Pending`, we are responsible
-for signalling the waker. Because we didn't implement the timer thread yet, we
-signalled the waker inline. Doing so will result in the future being immediately
-re-scheduled, executed again, and probably not be ready to complete.
+在返回 `Poll::Pending` 前，我们调用了 `cx.waker().wake_by_ref()`。这就满足了future约定。
+因为返回 `Poll::Pending`，我们有责任给waker信号。因为没有额外的timer线程，我们直接在本线程
+内部唤醒waker。这么做会导致future被立刻重调度执行。很可能还是没有准备好。
 
-Notice that you are allowed to signal the waker more often than necessary. In
-this particular case, we signal the waker even though we are not ready to
-continue the operation at all. There is nothing wrong with this besides some
-wasted CPU cycles. However, this particular implementation will result in a busy
-loop.
+注意，你可以被允许比实际需要更频繁的唤醒waker。在有些情况下，我们甚至在完全没准备好操作的情况下唤醒waker。
+除了浪费些CPU周期外并没有其他错误。这样的实现会导致更繁忙的循环。
 
-## Updating Mini Tokio
+## 更新 Mini Tokio
 
 The next step is updating Mini Tokio to receive waker notifications. We want the
 executor to only run tasks when they are woken, and to do this, Mini Tokio will
