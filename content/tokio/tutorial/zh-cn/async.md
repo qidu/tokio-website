@@ -369,39 +369,33 @@ impl Future for Delay {
 
 ## 更新 Mini Tokio
 
-The next step is updating Mini Tokio to receive waker notifications. We want the
-executor to only run tasks when they are woken, and to do this, Mini Tokio will
-provide its own waker. When the waker is invoked, its associated task is queued
-to be executed. Mini-Tokio passes this waker to the future when it polls the
-future.
+下一步是更新 Mini Tokio 以接收 waker 的通知。我们想让执行器只执行那些唤醒的任务，为此，
+Mini Tokio 将提供自己的waker。当waker被调用，与其关联的任务将被加入执行队列。
+Mini-Tokio 在poll这个future时将waker传给它。
 
-The updated Mini Tokio will use a channel to store scheduled tasks. Channels
-allow tasks to be queued for execution from any thread. Wakers must be `Send`
-and `Sync`, so we use the channel from the crossbeam crate, as the standard
-library channel is not `Sync`.
+更新的 Mini Tokio 使用管道来存储调度的任务。管道允许被缓存的任务能被任何线程执行。
+Wakers 需要能被 `Send` 和 `Sync`，所以我们使用crossbeam crate的管道，因为标准库的
+的管道是不可 `Sync`的。
 
-[[info]]
-| The `Send` and `Sync` traits are marker traits related to concurrency
-| provided by Rust. Types that can be **sent** to a different thread are
-| `Send`. Most types are `Send`, but something like [`Rc`] is not. Types
-| that can be **concurrently** accessed through immutable references are
-| `Sync`. A type can be `Send` but not `Sync` — a good example is
-| [`Cell`], which can be modified through an immutable reference, and
-| is thus not safe to access concurrently.
+[[提示]]
+| `Send` 和 `Sync` traits 与Rust并发相关的标记 traits。能被 **sent** 不同线程的
+| 类型叫作 `Send`。大多数类型是可 `Send`的，但有些比如 [`Rc`] 就不可以。那些能被
+| 通过不可变引用 **并发**访问的类型就是可 `Sync`的。有的类型能 `Send` 但不能 `Sync` 
+| —— 例如 [`Cell`]， 它能被不可变引用修改，并发访问将是不安全的。 
 |
-| For more details, see the related [chapter in the Rust book][ch].
+| 更多细节，可看[Rust book][ch]的相关章节。
 
 [`Rc`]: https://doc.rust-lang.org/std/rc/struct.Rc.html
 [`Cell`]: https://doc.rust-lang.org/std/cell/struct.Cell.html
 [ch]: https://doc.rust-lang.org/book/ch16-04-extensible-concurrency-sync-and-send.html
 
-Add the following dependency to your `Cargo.toml` to pull in channels.
+将如下依赖添加到你的 `Cargo.toml` 以获得管道。
 
 ```toml
 crossbeam = "0.8"
 ```
 
-Then, update the `MiniTokio` struct.
+然后更新 `MiniTokio` struct.
 
 ```rust
 use crossbeam::channel;
@@ -417,11 +411,9 @@ struct Task {
 }
 ```
 
-Wakers are `Sync` and can be cloned. When `wake` is called, the task must be
-scheduled for execution. To implement this, we have a channel. When the `wake()`
-is called on the waker, the task is pushed into the send half of the channel.
-Our `Task` structure will implement the wake logic. To do this, it needs to
-contain both the spawned future and the channel send half.
+Wakers 是 `Sync` 也能被克隆。当调用 `wake` 时，任务需要被调度并执行。为此，
+我们需要一个管道。当调用waker的 `wake()`时，任务被送进管道的发送端。我们的
+`Task` 类型将实现wake逻辑。为此，它需要同时包含生成的future和管道发送端。
 
 ```rust
 # use std::future::Future;
@@ -447,22 +439,19 @@ impl Task {
 }
 ```
 
-To schedule the task, the `Arc` is cloned and sent through the channel. Now, we
-need to hook our `schedule` function with [`std::task::Waker`][`Waker`]. The
-standard library provides a low-level API to do this using [manual vtable
-construction][vtable]. This strategy provides maximum flexibility to
-implementors, but requires a bunch of unsafe boilerplate code. Instead of using
-[`RawWakerVTable`][vtable] directly, we will use the [`ArcWake`] utility
-provided by the [`futures`] crate. This allows us to implement a simple trait to
-expose our `Task` struct as a waker.
+为调度这个任务，`Arc` 被克隆然后通过管道发送。现在，我们需要用[`std::task::Waker`][`Waker`]
+修改 `schedule` 函数。标准库提供了一个low-level API来用[manual vtable construction][vtable]实现这个。
+这为实现者提供了最大的弹性，但需要一堆不安全的样例代码。不直接使用[`RawWakerVTable`][vtable]，我们
+将使用[`futures`] crate提供的[`ArcWake`] 工具类。这让我们实现一个简单的trait以将我们
+`Task` 结构体暴露为一个waker。
 
-Add the following dependency to your `Cargo.toml` to pull in `futures`.
+添加如下依赖到你的 `Cargo.toml` 以获得 `futures`。
 
 ```toml
 futures = "0.3"
 ```
 
-Then implement [`futures::task::ArcWake`][`ArcWake`].
+然后实现 [`futures::task::ArcWake`][`ArcWake`].
 
 ```rust
 use futures::task::{self, ArcWake};
@@ -478,9 +467,8 @@ impl ArcWake for Task {
 }
 ```
 
-When the timer thread above calls `waker.wake()`, the task is pushed into the
-channel. Next, we implement receiving and executing the tasks in the
-`MiniTokio::run()` function.
+当上面的timer线程调用 `waker.wake()`时，这个任务将被发送到管道。接着，
+我们实现接收和执行任务的函数`MiniTokio::run()`。
 
 ```rust
 # use crossbeam::channel;
