@@ -178,20 +178,15 @@ Rust futures 是状态机 **state machines**。这里 `MainFuture` 被表达为f
 
 # Executors 执行器
 
-Asynchronous Rust functions return futures. Futures must have `poll` called on
-them to advance their state. Futures are composed of other futures. So, the
-question is, what calls `poll` on the very most outer future?
+异步的Rust函数返回futures。Futures 必须被调用 `poll` 函数来转换他们的状态。Futures可以由其他futures组合而成。
+所以问题是由什么在调用最外层future的 `poll` 函数？
 
-Recall from earlier, to run asynchronous functions, they must either be
-passed to `tokio::spawn` or be the main function annotated with
-`#[tokio::main]`. This results in submitting the generated outer future to the
-Tokio executor. The executor is responsible for calling `Future::poll` on the
-outer future, driving the asynchronous computation to completion.
+回忆前面，为执行异步函数，它们需要被传递给 `tokio::spawn` 或者对main函数注释为`#[tokio::main]`。
+这导致将外层future提交给Tokio执行器。执行器负责调用外层 `Future::poll` 驱动异步函数过程执行到完成状态。
 
 ## Mini Tokio
 
-To better understand how this all fits together, let's implement our own minimal
-version of Tokio! The full code can be found [here][mini-tokio].
+为了更好理解这些完整过程，我们先实现一个最小化的Tokio。完整代码在 [这里][mini-tokio].
 
 ```rust
 use std::collections::VecDeque;
@@ -256,39 +251,30 @@ impl MiniTokio {
 }
 ```
 
-This runs the async block. A `Delay` instance is created with the requested
-delay and is awaited on. However, our implementation so far has a major **flaw**.
-Our executor never goes to sleep. The executor continuously loops **all**
-spawned futures and polls them. Most of the time, the futures will not be ready
-to perform more work and will return `Poll::Pending` again. The process will
-burn CPU cycles and generally not be very efficient.
+这里执行了异步代码。一个 `Delay` 实例随指定延迟被生成并await调用。尽管这样，截至目前我们
+的实现有一个主要**缺陷**。执行器从不进入休眠。执行器持续遍历全部被生成的futures并poll调用它们。
+大多数时候，futures 并不会是就绪状态等着进一步执行，而是会一再返回 `Poll::Pending` 。这个进程
+会消耗CPU周期，并不是太有效率。
 
-Ideally, we want mini-tokio to only poll futures when the future is able to make
-progress. This happens when a resource that the task is blocked on becomes ready
-to perform the requested operation. If the task wants to read data from a TCP
-socket, then we only want to poll the task when the TCP socket has received
-data. In our case, the task is blocked on the given `Instant` being reached.
-Ideally, mini-tokio would only poll the task once that instant in time has
-passed.
+理想情况，我们希望 mini-tokio 只在 future 能被改变状态时去 poll 它。这会在对应阻塞等待的资源就绪
+能进一步操作时才出现。如果该任务实现从TCP socket读取数据，我们只会在TCP socket上收到数据时poll这个任务。
+在我们的例子中，这个任务阻塞在指定的 `Instant` 到达时。相应的，mini-tokio 只会在时刻到时 poll该任务。
 
-To achieve this, when a resource is polled, and the resource is **not** ready,
-the resource will send a notification once it transitions into a ready state.
+为实现这个过程，当一个资源被poll了但其状态**还没有** 就绪，这资源会在它的状态迁移到就绪时立刻发出一个通知。
 
-# Wakers
+# Wakers 唤醒者
 
-Wakers are the missing piece. This is the system by which a resource is able to
-notify the waiting task that the resource has become ready to continue some
-operation.
+缺的就是 Wakers。这就是资源能够唤醒等待资源就绪时能够通知等待中的任务的机制。 
 
-Let's look at the `Future::poll` definition again:
+让我们再看看 `Future::poll` 的定义:
 
 ```rust,compile_fail
 fn poll(self: Pin<&mut Self>, cx: &mut Context)
     -> Poll<Self::Output>;
 ```
 
-The `Context` argument to `poll` has a `waker()` method. This method returns a
-[`Waker`] bound to the current task. The [`Waker`] has a `wake()` method. Calling
+`Context` 的`poll` 参数有 `waker()` 方法。这个方法会返回一个[`Waker`] 约束在当前任务上. [`Waker`] 有一个 `wake()` 方法。
+调用这个方法，会传递
 this method signals to the executor that the associated task should be scheduled
 for execution. Resources call `wake()` when they transition to a ready state to
 notify the executor that polling the task will be able to make progress.
