@@ -103,10 +103,8 @@ async fn main() {
 
 ## `Future` 实现
 
-To help better understand how `select!` works, let's look at what a hypothetical
-`Future` implementation would look like. This is a simplified version. In
-practice, `select!` includes additional functionality like randomly selecting
-the branch to poll first.
+为更好的理解 `select!` 如何工作，我们先看看一个假设的 `Future` 实现是什么样的。这是简化版。
+实现上，`select!` 包括额外的功能，如随机选择异步分支任务以先poll。
 
 ```rust
 use tokio::sync::oneshot;
@@ -153,25 +151,22 @@ async fn main() {
 }
 ```
 
-The `MySelect` future contains the futures from each branch. When `MySelect` is
-polled, the first branch is polled. If it is ready, the value is used and
-`MySelect` completes. After `.await` receives the output from a future, the
-future is dropped. This results in the futures for both branches to be dropped.
-As one branch did not complete, the operation is effectively cancelled.
+这里 `MySelect` future 包含对应每个分支的future。当 `MySelect` 被poll了，第一个
+分支也会被poll。如果它完成了，就会使用它的返回值完成 `MySelect` 的poll过程。在 `.await` 
+收到future的输出，就会丢掉它。这导致两个分支都会被丢弃。因为另一个分支并没完成，
+对应的操作就被有效的取消了。
 
-Remember from the previous section:
+从前面的章节记住如下:
 
-> When a future returns `Poll::Pending`, it **must** ensure the waker is
-> signalled at some point in the future. Forgetting to do this results in the
-> task hanging indefinitely.
+> 当一个future返回 `Poll::Pending`状态，它**必须** 确保相应waker在后面某个时间点被通知。
+> 忘记这么做会导致任务被无限挂起。
 
-There is no explicit usage of the `Context` argument in the `MySelect`
-implementation. Instead, the waker requirement is met by passing `cx` to the
-inner futures. As the inner future must also meet the waker requirement, by only
-returning `Poll::Pending` when receiving `Poll::Pending` from an inner future,
-`MySelect` also meets the waker requirement.
+这里在 `MySelect`的实现中没有显示使用 `Context` 参数，
+代替方法是，waker 的要求是通过传递 `cx` 内部future。内部 future 必须也满足 waker 要求，by only
+收到内部future的 `Poll::Pending`返回值时也应返回 `Poll::Pending` ，`MySelect` 也就符合
+waker的要求。
 
-# Syntax
+# 语法
 
 The `select!` macro can handle more than two branches. The current limit is 64
 branches. Each branch is structured as:
