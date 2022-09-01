@@ -699,23 +699,17 @@ impl Future for Delay {
 }
 ```
 
-It is a bit involved, but the idea is, on each call to `poll`, the future checks
-if the supplied waker matches the previously recorded waker. If the two wakers
-match, then there is nothing else to do. If they do not match, then the recorded
-waker must be updated.
+稍微有点绕，主要意思是，每次调用到 `poll`, 这个future检查对应的waker是否是前面记下的waker，
+如果是同一个，就不需要做别的。如果不是，就更新它（future对应的waker）。
 
-## `Notify` utility
+## `Notify` 工具
 
-We demonstrated how a `Delay` future could be implemented by hand using wakers.
-Wakers are the foundation of how asynchronous Rust works. Usually, it is not
-necessary to drop down to that level. For example, in the case of `Delay`, we
-could implement it entirely with `async/await` by using the
-[`tokio::sync::Notify`][notify] utility. This utility provides a basic task
-notification mechanism. It handles the details of wakers, including making sure
-that the recorded waker matches the current task.
+我们展示了如何采用 waker 来实现`Delay` future。Wakers 是异步Rust工作的核心。通常，不需要
+深入到这个层面。例如，在`Delay`这个例子上，我们可以采用[`tokio::sync::Notify`][notify] 
+工具类来实现它的`async/await`能力。这个工具类提供基本的任务通知机制。它处理waker的细节工作，
+包括确认future对应的waker与当前task的匹配。
 
-Using [`Notify`][notify], we can implement a `delay` function using
-`async/await` like this:
+通过 [`Notify`][notify]，我们可以用`async/await`实现一个 `delay` 函数如下:
 
 ```rust
 use tokio::sync::Notify;
