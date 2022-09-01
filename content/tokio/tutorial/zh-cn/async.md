@@ -439,11 +439,11 @@ impl Task {
 }
 ```
 
-为调度这个任务，`Arc` 被克隆然后通过管道发送。现在，我们需要用[`std::task::Waker`][`Waker`]
+为调度这个任务，`Arc` 任务被克隆然后通过管道发送。现在，我们需要用[`std::task::Waker`][`Waker`]
 来修改 `schedule` 函数。标准库提供了一个low-level API来用[manual vtable construction][vtable]实现这个。
-这为实现者提供了最大的弹性，但需要一堆不安全的样例代码。不必直接使用[`RawWakerVTable`][vtable]，我们
-将使用[`futures`] crate提供的[`ArcWake`] 工具类。这让我们可用一个简单实现的 trait 以将我们
-`Task` 结构体也暴露为一个waker。
+这为实现者提供了最大的弹性，但需要用一堆不安全的样例代码。所以不必直接使用[`RawWakerVTable`][vtable]，我们
+可使用[`futures`] crate提供的[`ArcWake`] 工具类。这让我们可用一个简单 trait 实现以将我们
+`Task` 结构体也作为一个waker。
 
 添加如下依赖到你的 `Cargo.toml` 以获得 `futures`。
 
@@ -467,7 +467,7 @@ impl ArcWake for Task {
 }
 ```
 
-当上面的timer线程调用 `waker.wake()`时，这个任务将被发送到管道。接着，
+当从上面的timer线程调用 `waker.wake()`时，这个任务将被发送到管道。接着，
 我们实现接收和执行任务的函数`MiniTokio::run()`。
 
 ```rust
@@ -551,28 +551,28 @@ impl Task {
 这里发生了好多事。首先，实现了`MiniTokio::run()`。这个函数运行了一个从管道中接收调度任务的循环。
 所有的任务在唤醒后被发送到管道中，这些任务在执行后能够有状态迁移。
 
-此外，函数 `MiniTokio::new()` 和 `MiniTokio::spawn()` 被调整改用管道而不是 `VecDeque`。
-当新任务被生成后，它们被赋予了管道发送端的克隆，任务后续可以用这个发送端克隆来将自己调度到运行时执行。
+此外，函数 `MiniTokio::new()` 和 `MiniTokio::spawn()` 被调整为改用管道而不是 `VecDeque`。
+当新任务被生成后，它们被发送到管道发送端的克隆，任务后续可以用这个发送端来继续将自己调度到运行时执行。
 
-函数`Task::poll()` 创建使用`futures` crate 的 [`ArcWake`] 工具类创建waker。这个waker被用来创建
-`task::Context`，进而传给 `poll`。
+函数`Task::poll()` 使用`futures` crate 的 [`ArcWake`] 工具类来创建waker。这个waker被用来生成
+`task::Context`，进而传给future的 `poll`函数。
 
-# 概括
+# 总结
 
-我们现在看到了完整的Rust异步编程样例代码。Rust的`async/await` 特征通过traits来支撑。
+我们现在看到了完整的Rust异步编程样例代码。Rust的`async/await` 功能是通过traits来支撑的。
 这允许第三方crates，如Tokio来提供执行过程细节。
 
-* Rust 异步操作时lazy的，需要一个调用方通过poll来调用它们。
-* Wakers被传给futures，以关联future到对应的任务。
-* 当资源 **没有** 就绪时到可以操作完成时，返回 `Poll::Pending` 并记下任务的waker。
-* 当资源就绪，任务的waker收到唤醒
-* 执行器收到通知并调度任务去执行
-* 任务再次被poll，这次资源是就绪的，所以任务执行后将迁移到新状态。
+* Rust 异步操作是lazy的，需要一个调用方通过poll函数来调用它们。
+* Wakers被传给futures，和关联的future一起对应到任务上。
+* 当资源 **没有** 就绪时，直到可以操作完成前，返回 `Poll::Pending` 并记下唤醒任务的waker。
+* 当资源就绪，任务的waker会收到唤醒
+* 执行器在收到通知后，调度任务去执行
+* 任务会再次被poll，这次资源是就绪的，所以任务执行后将迁移到新状态。
 
-# A few loose ends
+# 一些延伸
 
 回忆我们在实现 `Delay` future时，我们说有些缺陷问题需要修复。Rust异步模型运行单个future
-执行时在任务间迁移。考虑如下：
+执行时会在任务间迁移。考虑如下：
 
 ```rust
 use futures::future::poll_fn;
@@ -607,17 +607,17 @@ async fn main() {
 ```
 
 函数 `poll_fn` 用闭包创建一个 `Future` 实例。上面这段代码创建一个`Delay` 实例，
-poll调用它一次，然后将 `Delay` 实例发送到一个新任务中await。在这个例子中，多次
+并用poll调用它一次，然后将 `Delay` 实例发送到一个新任务中await。在这个例子中，多次
 利用 **不同的** `Waker` 实例调用`Delay::poll`。当这样使用了，你需要确保在`Waker`
-上调用 `wake` 传递入_最近的_`poll`调用。
+上调用 `wake` 传递到_最近的_`poll`调用。
 
-当实现future时，很关键假设每次调用`poll`**可以**供应一个不同的`Waker` 实例。函数
-poll将之前记下任务waker需要更换成一个新的。
+当实现future时，假设每次调用`poll`**可以**供应一个不同的`Waker` 实例是很关键的。函数
+poll要将之前记下的任务waker更换成一个新的。
 
 我们之前的`Delay` 实现每次poll时生成一个新线程。这可以，但频繁调用poll就不是很有效率
-(e.g. 如果你 `select!` 遍历一些futures，都被poll了如果任何一个future有新事件)。
-一个方法时记住是否生成过新线程，如果没有生成过，就生成一个新的。尽管可以这么做，你也
-需要确保线程的`Waker`在后面的poll调用时是更新的，否则就没有唤醒最近的`Waker`。
+(e.g. 如果你 `select!` 遍历一组futures，如果任何一个future有新事件发送其他futures都会被poll到)。
+一个方法是，记住是否生成过新线程，如果没有生成过，就生成一个新的。尽管可以这么做，你也
+需要确保线程的`Waker`在后面的poll调用时是更新的，否则就没有唤醒到最近的`Waker`。
 
 为修复之前的实现，我们可以这么做:
 
@@ -700,13 +700,13 @@ impl Future for Delay {
 ```
 
 稍微有点绕，主要意思是，每次调用到 `poll`, 这个future检查对应的waker是否是前面记下的waker，
-如果是同一个，就不需要做别的。如果不是，就更新它（future对应的waker）。
+如果是同一个，就不需要做别的。如果不是，就更换它（future对应的waker）。
 
 ## `Notify` 工具
 
 我们展示了如何采用 waker 来实现`Delay` future。Wakers 是异步Rust工作的核心。通常，不需要
 深入到这个层面。例如，在`Delay`这个例子上，我们可以采用[`tokio::sync::Notify`][notify] 
-工具类来实现它的`async/await`能力。这个工具类提供基本的任务通知机制。它处理waker的细节工作，
+工具类来实现它的`async/await`能力。这个工具类提供基本的任务通知机制。它处理waker的细节，
 包括确认future对应的waker与当前task的匹配。
 
 通过 [`Notify`][notify]，我们可以用`async/await`实现一个 `delay` 函数如下:
