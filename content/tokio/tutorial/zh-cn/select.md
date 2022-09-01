@@ -2,16 +2,14 @@
 title: "Select"
 ---
 
-So far, when we wanted to add concurrency to the system, we spawned a new task.
-We will now cover some additional ways to concurrently execute asynchronous code
-with Tokio.
+截至目前，当我们想给程序增加并发，我们会生成一个新任务。现在进一步覆盖一些额外的方法，
+以通过Tokio执行异步代码。
 
 # `tokio::select!`
 
-The `tokio::select!` macro allows waiting on multiple async computations and
-returns when a **single** computation completes.
+宏 `tokio::select!` 允许等待在多个异步计算上，并能在任意**一个**异步计算完成时返回。
 
-For example:
+例如:
 
 ```rust
 use tokio::sync::oneshot;
@@ -40,32 +38,23 @@ async fn main() {
 }
 ```
 
-Two oneshot channels are used. Either channel could complete first. The
-`select!` statement awaits on both channels and binds `val` to the value
-returned by the task. When either `tx1` or `tx2` complete, the associated block
-is executed.
+使用了两个 oneshot 管道。任何一个管道有可能先收到消息。`select!` 语句 await 在两个管道上，
+并将 `val` 绑定到任务返回值上。当 `tx1` 和 `tx2` 中任何一个就绪，响应的代码块就会先执行。
 
-The branch that **does not** complete is dropped. In the example, the
-computation is awaiting the `oneshot::Receiver` for each channel. The
-`oneshot::Receiver` for the channel that did not complete yet is dropped.
+而**未完成** 的分支将会被丢弃。在这个例子，计算任务会等待在每个管道的 `oneshot::Receiver` 上。
+没完成 `oneshot::Receiver` 对应的管道将被丢弃。
 
-## Cancellation
+## 取消
 
-With asynchronous Rust, cancellation is performed by dropping a future. Recall
-from ["Async in depth"][async], async Rust operation are implemented using
-futures and futures are lazy. The operation only proceeds when the future is
-polled. If the future is dropped, the operation cannot proceed because all
-associated state has been dropped.
+使用Rust异步编程，通过丢弃一个future来取消任务。从["深入异步"][async]中回忆，异步操作是
+通过lazy的future来实现的。这些操作只会在future被poll时执行。如果要丢弃future，对应的操作
+就不会再处理了因为所有关联的状态也都被丢弃了。
 
-That said, sometimes an asynchronous operation will spawn background tasks or
-start other operation that run in the background. For example, in the above
-example, a task is spawned to send a message back. Usually, the task will
-perform some computation to generate the value.
+也就是说，有时一个异步操作会生成新任务或启动它将在后台运行的任务。例如，前面例子中，一个任务
+生成了用于回送消息。通常，任务将执行一些计算并生成返回值。
 
-Futures or other types can implement `Drop` to cleanup background resources.
-Tokio's `oneshot::Receiver` implements `Drop` by sending a closed notification to
-the `Sender` half. The sender half can receive this notification and abort the
-in-progress operation by dropping it.
+Futures 或其他类型能实现 `Drop` 特性以清理后台资源。Tokio的 `oneshot::Receiver` 实现了 `Drop` 
+以发送关闭通知给对端 `Sender` 。管道发送端能收到关闭通知并取消释放正处理中的消息操作。
 
 
 ```rust
@@ -112,7 +101,7 @@ async fn main() {
 
 [async]: async
 
-## The `Future` implementation
+## `Future` 实现
 
 To help better understand how `select!` works, let's look at what a hypothetical
 `Future` implementation would look like. This is a simplified version. In
