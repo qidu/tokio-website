@@ -35,7 +35,7 @@ async fn main() {
 ```
 
 函数`my_async_fn()`的返回值就是一个future。future是一个实现了[`std::future::Future`][trait] trait 的值，
-它由标准库提供。它包含了待处理的异步计算的值。
+它由标准库提供。它包含了待处理的异步计算的返回值。
 
 标准库里 [`std::future::Future`][trait] trait 定义如下:
 
@@ -51,10 +51,10 @@ pub trait Future {
 }
 ```
 
-[关联类型][assoc] `Output` 值是由future在完成后产生的。[`Pin`][pin] 类型是Rust如何
-支持在`async` 函数中借用变量的基础。从 [标准库][pin] 文档中参考更多细节。
+[关联类型][assoc] `Output` 返回值是由future在完成后产生的。[`Pin`][pin] 类型是Rust如何
+支持在`async` 函数中借用变量的基础。可以从 [标准库][pin] 文档中参考更多细节。
 
-不像其他语言中的futures实现，Rust的future并不表示一个在背后运行的计算过程，相反Rust的future
+不像其他语言中的futures实现，Rust的future并不表示一个正在背后运行的计算过程，相反Rust的future
 只表示计算过程本身。future的所有者负责通过调用`Future::poll`操作来执行这个计算过程。
 
 ## 实现 `Future`
@@ -85,7 +85,7 @@ impl Future for Delay {
             println!("Hello world");
             Poll::Ready("done")
         } else {
-            // Ignore this line for now.
+            // 暂时忽略这行.
             cx.waker().wake_by_ref();
             Poll::Pending
         }
@@ -104,9 +104,9 @@ async fn main() {
 
 ## Async fn 作为 Future
 
-在main函数中，我们实例化了future 并调用 `.await`。在异步函数里，我们可以在任何实现过`Future`
-的值上调用 `.await`。相应的，调用`async` 函数返回实现了`Future`的匿名类型值。而调用 `async fn main()`，
-大约生成如下future:
+在main函数中，我们实例化了future 并调用 `.await`。在异步函数里，我们可以在任何实现过`Future`的值上
+调用 `.await`。相应的，调用`async` 函数返回实现了`Future`的匿名类型值。而调用 `async fn main()`，
+大体生成如下future:
 
 ```rust
 use std::future::Future;
@@ -168,8 +168,8 @@ impl Future for MainFuture {
 ```
 
 Rust futures 是状态机 **state machines**。这里 `MainFuture` 被表达为future可能状态的`enum`类型。
-这future 从状态 `State0` 开始。当调用其 `poll` 方法时，future尝试尽可能迁移其内部状态。如果feature
-能执行完，就将这异步执行的结果封装在状态 `Poll::Ready` 里一起返回。
+此future从状态 `State0` 开始。当调用其 `poll` 方法时，future尝试尽可能迁移其内部状态。如果feature
+能执行完，就将这次异步执行的结果封装在状态 `Poll::Ready` 里一起返回。
 
 如果该future还无法完成，通常因为还在等待某些未就绪的资源，那么返回 `Poll::Pending` 。当收到
 `Poll::Pending` 返回值时，表示该future将会在以后某个时间点完成，调用者需要在后面继续调用 `poll`。
@@ -178,15 +178,15 @@ Rust futures 是状态机 **state machines**。这里 `MainFuture` 被表达为f
 
 # Executors 执行器
 
-异步的Rust函数返回futures。Futures 必须被调用 `poll` 函数来转换他们的状态。Futures可以由其他futures组合而成。
-所以问题是由什么在调用最外层future的 `poll` 函数？
+异步的Rust函数返回futures。Futures 的`poll` 函数必须被调用以转换它们的状态。Futures可以由其他futures组合而成。
+所以问题是，是什么在调用最外层future的 `poll` 函数？
 
-回忆前面，为执行异步函数，它们需要被传递给 `tokio::spawn` 或者对main函数注释为`#[tokio::main]`。
+回忆前面，为执行异步函数，它们需要被传递给 `tokio::spawn` 或者将main函数注释为`#[tokio::main]`。
 这导致将外层future提交给Tokio执行器。执行器负责调用外层 `Future::poll` 驱动异步函数过程执行到完成状态。
 
 ## Mini Tokio
 
-为了更好理解这些完整过程，我们先实现一个最小化的Tokio。完整代码在 [这里][mini-tokio].
+为了更好理解这些完整过程，我们先实现一个最小化的Tokio。完整代码在[这里][mini-tokio].
 
 ```rust
 use std::collections::VecDeque;
@@ -251,20 +251,20 @@ impl MiniTokio {
 }
 ```
 
-这里执行了异步代码。一个 `Delay` 实例随指定延迟被生成并await调用。尽管这样，截至目前我们
-的实现有一个主要**缺陷**。执行器从不进入休眠。执行器持续遍历全部被生成的futures并poll调用它们。
+这里执行了异步代码。一个 `Delay` 实例随指定延后时间被生成，并调用它的await。尽管这样，截至目前我们
+的实现有一个主要**缺陷**。执行器从不进入休眠。执行器持续遍历全部被生成的futures并用poll调用它们。
 大多数时候，futures 并不会是就绪状态等着进一步执行，而是会一再返回 `Poll::Pending` 。这个进程
 会消耗CPU周期，并不是太有效率。
 
 理想情况，我们希望 mini-tokio 只在 future 能被改变状态时去 poll 它。这会在对应阻塞等待的资源就绪
-能进一步操作时才出现。如果该任务实现从TCP socket读取数据，我们只会在TCP socket上收到数据时poll这个任务。
-在我们的例子中，这个任务阻塞在指定的 `Instant` 到达时。相应的，mini-tokio 只会在时刻到时 poll该任务。
+能进一步操作时才出现。例如该任务实现要从TCP socket读取数据，我们只会在TCP socket上收到数据时poll这个任务。
+在我们的例子中，这个任务要阻塞到指定的 `Instant` 时刻到达时才完成。相应的，mini-tokio 只要在时刻到时 poll该任务。
 
-为实现这个过程，当一个资源被poll了但其状态**还没有** 就绪，这资源会在它的状态迁移到就绪时立刻发出一个通知。
+为实现这个过程，当一个资源被poll了但其状态**还没有** 就绪，这资源应在它的状态迁移到就绪时，立刻发出一个唤醒通知。
 
 # Wakers 唤醒者
 
-缺的就是 Wakers。这就是资源能够唤醒等待资源就绪时能够通知等待中的任务的机制。 
+所以缺的就是Wakers。这就是在等待的资源就绪时，能够通知对应等待中的任务的机制。 
 
 让我们再看看 `Future::poll` 的定义:
 
@@ -274,8 +274,8 @@ fn poll(self: Pin<&mut Self>, cx: &mut Context)
 ```
 
 `Context` 的`poll` 参数有 `waker()` 方法。这个方法会返回一个[`Waker`] 约束在当前任务上. [`Waker`] 有一个 `wake()` 方法。
-调用这个方法，会传递信号告诉执行器与它关联的任务应该被再次调度执行了。资源调用 `wake()` 当它们转换到就绪状态以通知执行器此时
-来poll这个任务可以转换到新状态。
+调用这个方法，会传递信号告诉执行器：与它关联的任务可以被再次调度执行了。资源绪时调用 `wake()` 以通知执行器此时poll这任务可以
+迁移到新状态。
 
 ## 更新 `Delay`
 
@@ -323,16 +323,16 @@ impl Future for Delay {
 }
 ```
 
-现在，一旦指定的时间过去，调用中的任务被通知，执行器会确保该任务再次调度执行。下一步是
+现在，一旦指定的时间过去，调用中的任务被通知，执行器会确保该任务再次被调度执行。下一步是
 更新 mini-tokio 去监听唤醒通知。
 
 我们 `Delay` 实现仍有一些遗留问题，将在后面再修复它们。
 
 [[警告]]
-| 当future 返回 `Poll::Pending`，它**必须**确定waker会再某个时间点被唤醒。 
+| 当future 返回 `Poll::Pending`，它**必须**确定对应的waker会再某个时间点被唤醒。 
 | 忘记这个步骤会导致任务被无限期挂起。
 |
-| 在返回 `Poll::Pending` 后忘记唤醒任务是常见错误。
+| 在返回 `Poll::Pending` 后忘记唤醒任务是比较常见的出错原因。
 
 回忆首次迭代 `Delay`。 以下是 future 实现:
 
@@ -361,27 +361,27 @@ impl Future for Delay {
 ```
 
 在返回 `Poll::Pending` 前，我们调用了 `cx.waker().wake_by_ref()`。这就满足了future约定。
-因为返回 `Poll::Pending`，我们有责任给waker信号。因为没有额外的timer线程，我们直接在本线程
-内部唤醒waker。这么做会导致future被立刻重调度执行。很可能还是没有准备好。
+因为返回 `Poll::Pending`，我们有责任给waker以信号。由于没有额外的timer线程，我们直接在本线程
+内部唤醒了waker。这么做会导致future被立刻重调度执行。很可能它依赖的资源还是没有准备好。
 
-注意，你可以被允许比实际需要更频繁的唤醒waker。在有些情况下，我们甚至在完全没准备好操作的情况下唤醒waker。
-除了浪费些CPU周期外并没有其他错误。这样的实现会导致更繁忙的循环。
+注意，你可以被允许比实际需要更频繁的唤醒waker。在有些情况下，我们甚至可在完全没准备好操作的情况下
+唤醒waker。除了浪费些CPU周期外并没有其他错误，这种实现方式会导致更频繁循环过程。
 
 ## 更新 Mini Tokio
 
 下一步是更新 Mini Tokio 以接收 waker 的通知。我们想让执行器只执行那些唤醒的任务，为此，
-Mini Tokio 将提供自己的waker。当waker被调用，与其关联的任务将被加入执行队列。
-Mini-Tokio 在poll这个future时将waker传给它。
+Mini Tokio 将提供自己的waker。当waker被调用，与其关联的任务将被加入运行时执行队列。
+Mini-Tokio 会在poll这个future时将waker传给它。
 
-更新的 Mini Tokio 使用管道来存储调度的任务。管道允许被缓存的任务能被任何线程执行。
-Wakers 需要能被 `Send` 和 `Sync`，所以我们使用crossbeam crate的管道，因为标准库的
-的管道是不可 `Sync`的。
+更新的 Mini Tokio 使用管道来存储调度的任务。管道允许被缓存的任务能被切换到任何线程执行。
+Wakers 需要能被 `Send` 和 `Sync`，所以我们使用crossbeam crate的管道，因为标准库的管道
+是支持 `Sync`的。
 
 [[提示]]
-| `Send` 和 `Sync` traits 与Rust并发相关的标记 traits。能被 **sent** 不同线程的
-| 类型叫作 `Send`。大多数类型是可 `Send`的，但有些比如 [`Rc`] 就不可以。那些能被
-| 通过不可变引用 **并发**访问的类型就是可 `Sync`的。有的类型能 `Send` 但不能 `Sync` 
-| —— 例如 [`Cell`]， 它能被不可变引用修改，并发访问将是不安全的。 
+| `Send` 和 `Sync` traits 是与Rust并发相关的标记 traits。能被 **sent** 不同线程的
+| 类型叫作 `Send`。大多数类型是可 `Send`的，但有些如 [`Rc`] 就不可以。那些能被用不可变
+| 引用 **并发**访问的类型就是可 `Sync`的。有的类型能 `Send` 但不能 `Sync` 
+| ———— 例如 [`Cell`]， 因它能被不可变引用修改，并发访问它将是不安全的。 
 |
 | 更多细节，可看[Rust book][ch]的相关章节。
 
@@ -411,7 +411,7 @@ struct Task {
 }
 ```
 
-Wakers 是 `Sync` 也能被克隆。当调用 `wake` 时，任务需要被调度并执行。为此，
+Wakers 是 `Sync` 的也能被克隆。当调用 `wake` 时，任务需要被调度并执行。为此，
 我们需要一个管道。当调用waker的 `wake()`时，任务被送进管道的发送端。我们的
 `Task` 类型将实现wake逻辑。为此，它需要同时包含生成的future和管道发送端。
 
@@ -440,10 +440,10 @@ impl Task {
 ```
 
 为调度这个任务，`Arc` 被克隆然后通过管道发送。现在，我们需要用[`std::task::Waker`][`Waker`]
-修改 `schedule` 函数。标准库提供了一个low-level API来用[manual vtable construction][vtable]实现这个。
-这为实现者提供了最大的弹性，但需要一堆不安全的样例代码。不直接使用[`RawWakerVTable`][vtable]，我们
-将使用[`futures`] crate提供的[`ArcWake`] 工具类。这让我们实现一个简单的trait以将我们
-`Task` 结构体暴露为一个waker。
+来修改 `schedule` 函数。标准库提供了一个low-level API来用[manual vtable construction][vtable]实现这个。
+这为实现者提供了最大的弹性，但需要一堆不安全的样例代码。不必直接使用[`RawWakerVTable`][vtable]，我们
+将使用[`futures`] crate提供的[`ArcWake`] 工具类。这让我们可用一个简单实现的 trait 以将我们
+`Task` 结构体也暴露为一个waker。
 
 添加如下依赖到你的 `Cargo.toml` 以获得 `futures`。
 
