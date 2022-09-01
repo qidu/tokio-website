@@ -548,40 +548,31 @@ impl Task {
 }
 ```
 
-Multiple things are happening here. First, `MiniTokio::run()` is implemented.
-The function runs in a loop receiving scheduled tasks from the channel.
-As tasks are pushed into the channel when they are woken, these tasks are able
-to make progress when executed.
+这里发生了好多事。首先，实现了`MiniTokio::run()`。这个函数运行了一个从管道中接收调度任务的循环。
+所有的任务在唤醒后被发送到管道中，这些任务在执行后能够有状态迁移。
 
-Additionally, the `MiniTokio::new()` and `MiniTokio::spawn()` functions are
-adjusted to use a channel rather than a `VecDeque`. When new tasks are spawned,
-they are given a clone of the sender-part of the channel, which the task can
-use to schedule itself on the runtime.
+此外，函数 `MiniTokio::new()` 和 `MiniTokio::spawn()` 被调整改用管道而不是 `VecDeque`。
+当新任务被生成后，它们被赋予了管道发送端的克隆，任务后续可以用这个发送端克隆来将自己调度到运行时执行。
 
-The `Task::poll()` function creates the waker using the [`ArcWake`] utility from
-the `futures` crate. The waker is used to create a `task::Context`. That
-`task::Context` is passed to `poll`.
+函数`Task::poll()` 创建使用`futures` crate 的 [`ArcWake`] 工具类创建waker。这个waker被用来创建
+`task::Context`，进而传给 `poll`。
 
-# Summary
+# 概括
 
-We have now seen an end-to-end example of how asynchronous Rust works. Rust's
-`async/await` feature is backed by traits. This allows third-party crates, like
-Tokio, to provide the execution details.
+我们现在看到了完整的Rust异步编程样例代码。Rust的`async/await` 特征通过traits来支撑。
+这允许第三方crates，如Tokio来提供执行过程细节。
 
-* Asynchronous Rust operations are lazy and require a caller to poll them.
-* Wakers are passed to futures to link a future to the task calling it.
-* When a resource is **not** ready to complete an operation, `Poll::Pending` is
-  returned and the task's waker is recorded.
-* When the resource becomes ready, the task's waker is notified.
-* The executor receives the notification and schedules the task to execute.
-* The task is polled again, this time the resource is ready and the task makes
-  progress.
+* Rust 异步操作时lazy的，需要一个调用方通过poll来调用它们。
+* Wakers被传给futures，以关联future到对应的任务。
+* 当资源 **没有** 就绪时到可以操作完成时，返回 `Poll::Pending` 并记下任务的waker。
+* 当资源就绪，任务的waker收到唤醒
+* 执行器收到通知并调度任务去执行
+* 任务再次被poll，这次资源是就绪的，所以任务执行后将迁移到新状态。
 
 # A few loose ends
 
-Recall when we were implementing the `Delay` future, we said there were a few
-more things to fix. Rust's asynchronous model allows a single future to migrate
-across tasks while it executes. Consider the following:
+回忆我们在实现 `Delay` future时，我们说有些缺陷问题需要修复。Rust异步模型运行单个future
+执行时在任务间迁移。考虑如下：
 
 ```rust
 use futures::future::poll_fn;
@@ -615,26 +606,20 @@ async fn main() {
 }
 ```
 
-The `poll_fn` function creates a `Future` instance using a closure. The snippet
-above creates a `Delay` instance, polls it once, then sends the `Delay` instance
-to a new task where it is awaited. In this example, `Delay::poll` is called more
-than once with **different** `Waker` instances. When this happens, you must make
-sure to call `wake` on the `Waker` passed to _the most recent_ call to `poll`.
+函数 `poll_fn` 用闭包创建一个 `Future` 实例。上面这段代码创建一个`Delay` 实例，
+poll调用它一次，然后将 `Delay` 实例发送到一个新任务中await。在这个例子中，多次
+利用 **不同的** `Waker` 实例调用`Delay::poll`。当这样使用了，你需要确保在`Waker`
+上调用 `wake` 传递入_最近的_`poll`调用。
 
-When implementing a future, it is critical to assume that each call to `poll`
-**could** supply a different `Waker` instance. The poll function must update any
-previously recorded waker with the new one.
+当实现future时，很关键假设每次调用`poll`**可以**供应一个不同的`Waker` 实例。函数
+poll将之前记下任务waker需要更换成一个新的。
 
-Our earlier implementation of `Delay` spawned a new thread every time it was
-polled. This is fine, but can be very inefficient if it is polled too often
-(e.g. if you `select!` over that future and some other future, both are polled
-whenever either has an event). One approach to this is to remember whether you
-have already spawned a thread, and only spawn a new thread if you haven't
-already spawned one.  However if you do this, you must ensure that the thread's
-`Waker` is updated on later calls to poll, as you are otherwise not waking the
-most recent `Waker`.
+我们之前的`Delay` 实现每次poll时生成一个新线程。这可以，但频繁调用poll就不是很有效率
+(e.g. 如果你 `select!` 遍历一些futures，都被poll了如果任何一个future有新事件)。
+一个方法时记住是否生成过新线程，如果没有生成过，就生成一个新的。尽管可以这么做，你也
+需要确保线程的`Waker`在后面的poll调用时是更新的，否则就没有唤醒最近的`Waker`。
 
-To fix our earlier implementation, we could do something like this:
+为修复之前的实现，我们可以这么做:
 
 ```rust
 use std::future::Future;
