@@ -168,32 +168,26 @@ waker的要求。
 
 # 语法
 
-The `select!` macro can handle more than two branches. The current limit is 64
-branches. Each branch is structured as:
+宏 `select!` 可以处理多于两个分支。目前的最大闲置是 64 个分支。每个分支的格式是:
 
 ```text
 <pattern> = <async expression> => <handler>,
 ```
 
-When the `select` macro is evaluated, all the `<async expression>`s are
-aggregated and executed concurrently. When an expression completes, the result
-is matched against `<pattern>`. If the result matches the pattern, then all
-remaining async expressions are dropped and `<handler>` is executed. The
-`<handler>` expression has access to any bindings established by `<pattern>`.
+当 `select` 宏被解释后，所有的 `<async expression>` 将被聚合以并发执行。当其中一个异步
+分支执行完，返回值将会与 `<pattern>` 进行匹配。如果结果符合模式，那么所有剩余的异步分支
+将被丢弃，匹配上的分支对应的 `<handler>` 将被执行。`<handler>` 分支将访问 `<pattern>`建立的任何绑定。
 
-The basic case is `<pattern>` is a variable name, the result of the async
-expression is bound to the variable name and `<handler>` has access to that
-variable. This is why, in the original example, `val` was used for `<pattern>`
-and `<handler>` was able to access `val`.
+最基本的 `<pattern>` 例子是变量名，异步表达式的返回值将被绑定到该变量上，`<handler>` 以
+该变量名来访问返回值。这也是为什么最前面的例子中把 `val` 用在 `<pattern>` 上以便 `<handler>` 
+能访问它。
 
-If `<pattern>` **does not** match the result of the async computation, then the
-remaining async expressions continue to execute concurrently until the next one
-completes. At this time, the same logic is applied to that result.
+如果 `<pattern>` **不匹配** 异步表达式返回值，那么剩余的异步表达式将继续并发执行直到下一个完成。
+那时，同样的逻辑会用在新返回值上。
 
-Because `select!` takes any async expression, it is possible to define more
-complicated computations to select on.
+由于 `select!` 能使用任何异步表达式，可能定义更复杂的执行过程用来 select 它。
 
-Here, we select on the output of a `oneshot` channel and a TCP connection.
+这里我们select在 `oneshot` 管道和一个TCP连接上。
 
 ```rust
 use tokio::net::TcpStream;
@@ -219,7 +213,7 @@ async fn main() {
 }
 ```
 
-Here, we select on a oneshot and accepting sockets from a `TcpListener`.
+这里我们select在oneshot管道和`TcpListener`的socket接收上。
 
 ```rust
 use tokio::net::TcpListener;
@@ -256,13 +250,11 @@ async fn main() -> io::Result<()> {
 # async fn process(_: tokio::net::TcpStream) {}
 ```
 
-The accept loop runs until an error is encountered or `rx` receives a value. The
-`_` pattern indicates that we have no interest in the return value of the async
-computation.
+这个accept循环运行直到遇到错误或者管道 `rx` 端收到消息。这里模式 `_` 表示我们对该异步计算的返回值没有兴趣。
 
-# Return value
+# 返回值
 
-The `tokio::select!` macro returns the result of the evaluated `<handler>` expression. 
+宏 `tokio::select!` 返回解释后的 `<handler>` 表达式的值。 
 
 ```rust
 async fn computation1() -> String {
@@ -288,13 +280,12 @@ async fn main() {
 # }
 ```
 
-Because of this, it is required that the `<handler>` expression for **each**
-branch evaluates to the same type. If the output of a `select!` expression is
-not needed, it is good practice to have the expression evaluate to `()`.
+因此，要求**每一个**分支对应的 `<handler>` 表达式应返回相同类型的值。如果不需要
+`select!` 表达式的返回值，那么返回空类型 `()` 是好的实践。
 
-# Errors
+# 错误
 
-Using the `?` operator propagates the error from the expression. How this works
+使用操作符 `?` operator propagates the error from the expression. How this works
 depends on whether `?` is used from an async expression or from a handler.
 Using `?` in an async expression propagates the error out of the async
 expression. This makes the output of the async expression a `Result`. Using `?`
