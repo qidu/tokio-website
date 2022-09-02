@@ -379,14 +379,11 @@ async fn main() {
 
 # 借用
 
-When spawning tasks, the spawned async expression must own all of its data. The
-`select!` macro does not have this limitation. Each branch's async expression
-may borrow data and operate concurrently. Following Rust's borrow rules,
-multiple async expressions may immutably borrow a single piece of data **or** a
-single async expression may mutably borrow a piece of data.
+当生成任务时，生成的异步表达式必须拥有所有关联数据。宏 `select!` 没有这个限制。
+每个分支的异步表达式可以借用数据，并发操作。根据Rust的借用规则，多个异步表达式
+可以不可变的借用单个值**或** 仅单个异步表达式可以可变的借用一个值。
 
-Let's look at some examples. Here, we simultaneously send the same data to two
-different TCP destinations.
+让我们看看一些例子。这里，我们同时发送相同的数据到两个不同的TCP连接目标。
 
 ```rust
 use tokio::io::AsyncWriteExt;
@@ -418,16 +415,13 @@ async fn race(
 # fn main() {}
 ```
 
-The `data` variable is being borrowed **immutably** from both async expressions.
-When one of the operations completes successfully, the other one is dropped.
-Because we pattern match on `Ok(_)`, if an expression fails, the other one
-continues to execute.
+这个 `data` 变量被两个异步表达式**不可变**的借用了。当其中一个操作成功，另一个分支被丢弃
+由于要匹配的模式是 `Ok(_)`，如果一个表达式没匹配上，另一个将继续执行。
 
-When it comes to each branch's `<handler>`, `select!` guarantees that only a
-single `<handler>` runs. Because of this, each `<handler>` may mutably borrow
-the same data.
+当执行每个分支的 `<handler>` 时，宏 `select!` 确保只有一个 `<handler>` 会运行。因此，
+每个 `<handler>` 可以可变的借用同样的变量数据。
 
-For example this modifies `out` in both handlers:
+例如这里就可以修改两个处理程序中的 `out` 变量（可变借用）:
 
 ```rust
 use tokio::sync::oneshot;
@@ -458,11 +452,10 @@ async fn main() {
 }
 ```
 
-# Loops
+# 循环
 
-The `select!` macro is often used in loops. This section will go over some
-examples to show common ways of using the `select!` macro in a loop. We start
-by selecting over multiple channels:
+宏 `select!` 经常用在循环中。本节将通过一些例子以展示在循环中使用宏`select!`的常见方案。
+我们从select多个管道开始:
 
 ```rust
 use tokio::sync::mpsc;
@@ -490,26 +483,18 @@ async fn main() {
 }
 ```
 
-This example selects over the three channel receivers. When a message is
-received on any channel, it is written to STDOUT. When a channel is closed,
-`recv()` returns with `None`. By using pattern matching, the `select!`
-macro continues waiting on the remaining channels. When all channels are
-closed, the `else` branch is evaluated and the loop is terminated.
+这个例子selects了三个管道接收端。当任何一个收到一条消息时，它将被写道STDOUT。
+当一个管道关闭，`recv()` 会返回 `None`。使用模式匹配时，宏 `select!` 将继续
+等待其他剩余的管道。当所有的管道都关闭了， `else` 分支将被执行而loop会break终止。
 
-The `select!` macro randomly picks branches to check first for readiness. When
-multiple channels have pending values, a random channel will be picked to
-receive from. This is to handle the case where the receive loop processes
-messages slower than they are pushed into the channels, meaning that the
-channels start to fill up. If `select!` **did not** randomly pick a branch
-to check first, on each iteration of the loop, `rx1` would be checked first. If
-`rx1` always contained a new message, the remaining channels would never be
-checked.
-
-[[info]]
-| If when `select!` is evaluated, multiple channels have pending messages, only
-| one channel has a value popped. All other channels remain untouched, and their
-| messages stay in those channels until the next loop iteration. No messages are
-| lost.
+宏 `select!` 随机的挑选分支来执行读取操作。当多个管道都有值可读时，随机选一个
+管道来接收消息。这可以处理一些当接收消息慢于发送消息意味着管道将可能填满的情况。
+如果 `select!` **不**随机选择分支先执行检查，则每次循环时，总先选择`rx1`检查。
+而如果`rx1`总是有消息可处理，则剩下的管道将永远不会被检查执行到。
+> 提示：
+> 如果当 `select!` 执行，多个管道有缓存住的消息，只有一个管道中的消息会弹出。
+> 其他管道保持为没处理，它们的消息继续保留在管道中，直到下一个循环随机选择到。
+> 没有消息会丢失。
 
 ## Resuming an async operation
 
