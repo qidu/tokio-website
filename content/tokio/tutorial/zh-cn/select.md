@@ -285,12 +285,10 @@ async fn main() {
 
 # 错误
 
-使用操作符 `?` operator propagates the error from the expression. How this works
-depends on whether `?` is used from an async expression or from a handler.
-Using `?` in an async expression propagates the error out of the async
-expression. This makes the output of the async expression a `Result`. Using `?`
-from a handler immediately propagates the error out of the `select!` expression.
-Let's look at the accept loop example again:
+使用操作符 `?` 操作符从表达式中传播了错误。如何实现这个取决于`?`是否被一部表达式或处理函数使用。
+在异步表达式中使用 `?` 可将错误传播出该表达式。这使得异步表达式输出一个 `Result`。在句柄中
+使用 `?` 可立即将错误传播出 `select!` 表达式。
+让我们再看看accept循环的例子:
 
 ```rust
 use tokio::net::TcpListener;
@@ -327,22 +325,21 @@ async fn main() -> io::Result<()> {
 # async fn process(_: tokio::net::TcpStream) {}
 ```
 
-Notice `listener.accept().await?`. The `?` operator propagates the error out of
-that expression and to the `res` binding. On an error, `res` will be set to
-`Err(_)`. Then, in the handler, the `?` operator is used again. The `res?`
-statement will propagate an error out of the `main` function.
+注意 `listener.accept().await?`。操作符 `?` 将错误传播出这表达式，传到 `res` 捆绑变量。
+在出错时， `res` 将被设置为 `Err(_)`。然后，在处理函数中，操作符 `?` 再次被使用。语句 `res?`
+将把错误传播出 `main` 函数。
 
-# Pattern matching
+# 模式匹配
 
-Recall that the `select!` macro branch syntax was defined as:
+回忆宏 `select!` 分支语法的定义:
 
 ```text
 <pattern> = <async expression> => <handler>,
+<模式变量> = <异步表达式> => <处理函数>,
 ```
 
-So far, we have only used variable bindings for `<pattern>`. However, any Rust
-pattern can be used. For example, say we are receiving from multiple MPSC
-channels, we might do something like this:
+到目前为止，我们只是为 `<pattern>` 使用过捆绑变量。尽管如此，任意Rust模式都能被使用。
+例如，假设我们收到多个管道的消息，或许执行如下代码:
 
 ```rust
 use tokio::sync::mpsc;
@@ -372,17 +369,15 @@ async fn main() {
 }
 ```
 
-In this example, the `select!` expression waits on receiving a value from `rx1`
-and `rx2`. If a channel closes, `recv()` returns `None`. This **does not** match
-the pattern and the branch is disabled. The `select!` expression will continue
-waiting on the remaining branches.
+在这个例子中，宏 `select!` 表达式等待从 `rx1` 和 `rx2` 上收取消息。如果一个管道关闭了，
+等待的 `recv()` 调用将返回 `None`。这**并不** 匹配模式，该分支将不可用。宏 `select!` 
+表达式将继续等待剩下的分析。
 
-Notice that this `select!` expression includes an `else` branch. The `select!`
-expression must evaluate to a value. When using pattern matching, it is possible
-that **none** of the branches match their associated patterns. If this happens,
-the `else` branch is evaluated.
+注意这里 `select!` 表达式包含一个 `else` 分支。 `select!` 表达式必须计算一个返回值，
+当使用模式匹配时，也可能**没有**任何分支匹配关联的模式。如果出现这样的情况，`else` 分支
+将被评估计算。
 
-# Borrowing
+# 借用
 
 When spawning tasks, the spawned async expression must own all of its data. The
 `select!` macro does not have this limitation. Each branch's async expression
