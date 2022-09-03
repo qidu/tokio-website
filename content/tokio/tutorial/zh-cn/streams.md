@@ -180,7 +180,7 @@ let messages = subscriber
 # }
 ```
 
-Running the program again, we get:
+再运行这个程序我们得到:
 
 ```text
 got = Ok(Message { channel: "numbers", content: b"1" })
@@ -188,11 +188,10 @@ got = Ok(Message { channel: "numbers", content: b"two" })
 got = Ok(Message { channel: "numbers", content: b"3" })
 ```
 
-This time the program ends.
+这次程序结束了。
 
-Now, let's limit the stream to single digit numbers. We will check this by
-checking for the message length. We use the [`filter`] adapter to drop any
-message that does not match the predicate.
+现在我们限制流到1。我们将通过消息长度检查这个。使用[`filter`]适配器来丢弃任何
+不匹配的消息。
 
 ```rust
 # use mini_redis::client;
@@ -211,7 +210,7 @@ let messages = subscriber
 # }
 ```
 
-Running the program again, we get:
+然后再运行这个程序得到:
 
 ```text
 got = Ok(Message { channel: "numbers", content: b"1" })
@@ -219,12 +218,10 @@ got = Ok(Message { channel: "numbers", content: b"3" })
 got = Ok(Message { channel: "numbers", content: b"6" })
 ```
 
-Note that the order in which adapters are applied matters. Calling `filter`
-first then `take` is different than calling `take` then `filter`.
+注意使用适配器的顺序影响结果。先调用`filter`再调用`take`与反过来调用不同。
 
-Finally, we will tidy up the output by stripping the `Ok(Message { ... })` part
-of the output. This is done with [`map`]. Because this is applied **after**
-`filter`, we know the message is `Ok`, so we can use `unwrap()`.
+最终，我们将通过剥去 `Ok(Message { ... })` 来整理输出格式。这用 [`map`]来实现。
+因为在使用 `filter` **之后**，我们知道这个消息是 `Ok`的，所以可以用 `unwrap()` 取值。
 
 ```rust
 # use mini_redis::client;
@@ -244,7 +241,7 @@ let messages = subscriber
 # }
 ```
 
-Now, the output is:
+那么输出:
 
 ```text
 got = b"1"
@@ -252,13 +249,13 @@ got = b"3"
 got = b"6"
 ```
 
-Another option would be to combine the [`filter`] and [`map`] steps into a single call using [`filter_map`].
+另一个选择是组合 [`filter`] 和 [`map`]，一步调用 [`filter_map`]。
 
-There are more available adapters. See the list [here][`StreamExt`].
+有更多适配器列举在 [这里][`StreamExt`]。
 
-# Implementing `Stream`
+# 实现 `Stream`
 
-The [`Stream`] trait is very similar to the [`Future`] trait.
+[`Stream`] 特性与 [`Future`] 特性非常相似。
 
 ```rust
 use std::pin::Pin;
@@ -278,18 +275,14 @@ pub trait Stream {
 }
 ```
 
-The `Stream::poll_next()` function is much like `Future::poll`, except it can be called
-repeatedly to receive many values from the stream. Just as we saw in [Async in
-depth][async], when a stream is **not** ready to return a value, `Poll::Pending`
-is returned instead. The task's waker is registered. Once the stream should be
-polled again, the waker is notified.
+`Stream::poll_next()` 函数很像 `Future::poll`，除了它能被重复调用以从流中收到很多值。
+就像我们在[深入异步][async]中看到的，当流**没有**就准备好返回值时，以返回`Poll::Pending`
+来代替。任务的 waker 被注册。一旦流准备好要被再poll，waker发起通知。
 
-The `size_hint()` method is used the same way as it is with [iterators][iter].
+`size_hint()` 方法的使用方式与与 [iterators][iter]一样。
 
-Usually, when manually implementing a `Stream`, it is done by composing futures
-and other streams. As an example, let's build off of the `Delay` future we
-implemented in [Async in depth][async]. We will convert it to a stream that
-yields `()` three times at 10 ms intervals
+通常，如果手动实现 `Stream`，会通过组合futures和其他streams一起实现。例如，我们把在
+[深入异步][async]中构建 `Delay`，转换成一个流方式，相隔10ms产生3次。
 
 ```rust
 use tokio_stream::Stream;
@@ -335,7 +328,7 @@ impl Stream for Interval {
 }
 ```
 
-## `async-stream`
+## `async-stream` 异步流
 
 Manually implementing streams using the [`Stream`] trait can be tedious.
 Unfortunately, the Rust programming language does not yet support `async/await`
