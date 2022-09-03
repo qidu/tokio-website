@@ -662,15 +662,10 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 # 每任务并发
 
-Both `tokio::spawn` and `select!` enable running concurrent asynchronous
-operations. However, the strategy used to run concurrent operations differs. The
-`tokio::spawn` function takes an asynchronous operation and spawns a new task to
-run it. A task is the object that the Tokio runtime schedules. Two different
-tasks are scheduled independently by Tokio. They may run simultaneously on
-different operating system threads. Because of this, a spawned task has the same
-restriction as a spawned thread: no borrowing.
+包括 `tokio::spawn` 和 `select!` 都能够执行并发异步任务。尽管如此，执行并发任务的策略有所不同。
+`tokio::spawn` 函数以异步操作为参数，生成一个新任务来执行它。一个任务是被Tokio运行时调度的对象。
+两个不同的任务被Tokio独立调度。它们可以在不同的操作系统上并发执行。因此，一个生成的任务与生成的
+线程有相同的限制：不能借用变量。
 
-The `select!` macro runs all branches concurrently **on the same task**. Because
-all branches of the `select!` macro are executed on the same task, they will
-never run **simultaneously**. The `select!` macro multiplexes asynchronous
-operations on a single task.
+而宏 `select!` 的所有分支都并发的在**相同任务**中执行。因此它们永远不会**在同时刻** 运行。宏 `select!`
+在单个任务上多路复用的执行异步操作。
