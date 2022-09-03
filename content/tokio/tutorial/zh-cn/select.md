@@ -496,12 +496,10 @@ async fn main() {
 > 其他管道保持为没处理，它们的消息继续保留在管道中，直到下一个循环随机选择到。
 > 没有消息会丢失。
 
-## Resuming an async operation
+## 恢复异步操作
 
-Now we will show how to run an asynchronous operation across multiple calls to
-`select!`. In this example, we have an MPSC channel with item type `i32`, and an
-asynchronous function. We want to run the asynchronous function until it
-completes or an even integer is received on the channel.
+现在我们将展示如何跨多个`select!`调用来运行异步操作。在这例子中，我们用一个MPSC管道
+传递 `i32` 消息，和一个异步函数。我们将运行该异步函数直到它完成，或直到管道收到了偶数。
 
 ```rust
 async fn action() {
@@ -532,24 +530,18 @@ async fn main() {
 }
 ```
 
-Note how, instead of calling `action()` in the `select!` macro, it is called
-**outside** the loop. The return of `action()` is assigned to `operation`
-**without** calling `.await`. Then we call `tokio::pin!` on `operation`.
+注意，代替在宏 `select!` 中调用 `action()` ，而是在loop循环外调用。 `action()`的返回值
+被赋给变量 `operation`而***不调用***`.await`。然后我们在`operation`上调用宏 `tokio::pin!`。
 
-Inside the `select!` loop, instead of passing in `operation`, we pass in `&mut
-operation`. The `operation` variable is tracking the in-flight asynchronous
-operation. Each iteration of the loop uses the same operation instead of issuing
-a new call to `action()`.
+在 `select!` 循环内，代替传递 `operation`，我们改传递了 `&mut operation`。变量`operation`
+跟踪着处理中异步操作。每次循环迭代，使用相同的操作而没发起一个新的 `action()`调用。
 
-The other `select!` branch receives a message from the channel. If the message
-is even, we are done looping. Otherwise, start the `select!` again.
+另外的`select!`分支接收管道消息。如果消息是偶数，我们结束循环。否则，再继续`select!` 循环。
 
-This is the first time we use `tokio::pin!`. We aren't going to get into the
-details of pinning yet. The thing to note is that, to `.await` a reference,
-the value being referenced must be pinned or implement `Unpin`.
+这是我们第一次使用 `tokio::pin!`。我们将不会深入它的细节。需要注意的是，为 `.await` 一个引用，
+引用的值必须被pin住或实现 `Unpin`。
 
-If we remove the `tokio::pin!` line and try to compile, we get the following
-error:
+如果我们移除 `tokio::pin!` 试着编译，我们将看到如下错误：
 
 ```text
 error[E0599]: no method named `poll` found for struct
@@ -574,29 +566,26 @@ error[E0599]: no method named `poll` found for struct
            `&mut impl std::future::Future: std::future::Future`
 ```
 
-Although we covered `Future` in [the previous chapter][async], this error still isn't
-very clear. If you hit such an error about `Future` not being implemented when attempting
-to call `.await` on a **reference**, then the future probably needs to be pinned.
+虽然我们在 [前面的章节][async]覆盖到了 `Future` 。如果你遇到这样一个在**引用**上调用`.await`时
+报没有实现的 `Future` 错误，那么future很可能需要被pin住。
 
-Read more about [`Pin`][pin] on the [standard library][pin].
+可在 [标准库][pin]得到更多关于[`Pin`][pin]的知识。
 
 [pin]: https://doc.rust-lang.org/std/pin/index.html
 
-## Modifying a branch
+## 修改分支
 
-Let's look at a slightly more complicated loop. We have:
+让我们看看一个稍微更复杂的循环。这里有：
 
-1. A channel of `i32` values.
-2. An async operation to perform on `i32` values.
+1. 收发 `i32` 值的管道。
+2. 一个对 `i32` 值的异步操作。
 
-The logic we want to implement is:
+我们将实现如下逻辑：
 
-1. Wait for an **even** number on the channel.
-2. Start the asynchronous operation using the even number as input.
-3. Wait for the operation, but at the same time listen for more even numbers on
-   the channel.
-4. If a new even number is received before the existing operation completes,
-   abort the existing operation and start it over with the new even number.
+1. 等待管道上一个 **偶数** 。
+2. 启动一个使用这个偶数作为异步操作的输入。
+3. 等待该操作，同时监听管道上更多的偶数。
+4. 如果在退出操作前收到一个新偶数，取消退出并用它再次启动操作。
 
 ```rust
 async fn action(input: Option<i32>) -> Option<String> {
@@ -646,42 +635,32 @@ async fn main() {
 }
 ```
 
-We use a similar strategy as the previous example. The async fn is called
-outside of the loop and assigned to `operation`. The `operation` variable is
-pinned. The loop selects on both `operation` and the channel receiver.
+我们使用跟前一个例子相似的策略。异步函数在循环外调用并赋给变量 `operation`。同时pin住变量
+`operation` 。在 `operation` 和管道接收上循环select。
 
-Notice how `action` takes `Option<i32>` as an argument. Before we receive the
-first even number, we need to instantiate `operation` to something. We make
-`action` take `Option` and return `Option`. If `None` is passed in, `None` is
-returned. The first loop iteration, `operation` completes immediately with
-`None`.
+注意`action`是如何接收参数 `Option<i32>` 的。在我们收到第一个偶数时，我们需要初始化一个
+`operation` 实例。我们让 `action` 接收 `Option` 并返回 `Option`。如果传入的是 `None` ，
+也就返回 `None`。第一次循环迭代时，`operation` 立即返回 `None` 完成。
 
-This example uses some new syntax. The first branch includes `, if !done`. This
-is a branch precondition. Before explaining how it works, let's look at what
-happens if the precondition is omitted. Leaving out `, if !done` and running the
-example results in the following output:
+这例子使用了新语法。第一个分支包含 `, if !done`。这是进入一个新分支的前提条件。在解释它如何
+工作前，我们看看忽略前提条件时会发生什么。如果没有 `, if !done` ，执行该代码将得到如下输出：
 
 ```text
 thread 'main' panicked at '`async fn` resumed after completion', src/main.rs:1:55
 note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 ```
 
-This error happens when attempting to use `operation` **after** it has already
-completed. Usually, when using `.await`, the value being awaited is consumed. In
-this example, we await on a reference. This means `operation` is still around
-after it has completed.
+这个错误表示，尝试使用`operation`时间点**晚于** 了它完成的时间。通常当使用 `.await`时，
+被await的值要被处理。在这例子中，我们在引用上await。这表示 `operation` 在它完成后仍然
+存在。
 
-To avoid this panic, we must take care to disable the first branch if
-`operation` has completed. The `done` variable is used to track whether or not
-`operation` completed. A `select!` branch may include a **precondition**. This
-precondition is checked **before** `select!` awaits on the branch. If the
-condition evaluates to `false` then the branch is disabled. The `done` variable
-is initialized to `false`. When `operation` completes, `done` is set to `true`.
-The next loop iteration will disable the `operation` branch. When an even
-message is received from the channel, `operation` is reset and `done` is set to
-`false`.
+为避免这个panic错误，如果`operation`完成我们必须小心屏蔽第一个分支。变量 `done` 被用来
+跟踪 `operation` 是否完成。`select!` 的分支可以引入一个**前提条件**。这个条件在`select!`
+等待在该分支 **之前** 被检查。如果这个条件返回 `false` 那么这个分支将被禁止执行。变量 `done` 
+初始化为 `false`。当 `operation` 完成，`done` 被设为 `true`。下一次循环迭代时将禁用
+`operation` 分支。当从管道上收到一个偶数消息 `operation` 被重置，且 `done` 被重新设为`false`。
 
-# Per-task concurrency
+# 每任务并发
 
 Both `tokio::spawn` and `select!` enable running concurrent asynchronous
 operations. However, the strategy used to run concurrent operations differs. The
