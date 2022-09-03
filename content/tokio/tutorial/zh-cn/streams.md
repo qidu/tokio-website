@@ -157,17 +157,15 @@ got = Ok(Message { channel: "numbers", content: b"6" })
 有些早的消息可能被丢弃，因为在订阅和发布之间有竞争。这个程序不会退出。一个到 Mini-Redis 管道
 的订阅者将与服务端一样活跃。
 
-Let's see how we can work with streams to expand on this program.
+让我们看看用流来扩展这个程序。
 
-# Adapters
+# 适配器
 
-Functions that take a [`Stream`] and return another [`Stream`] are often called
-'stream adapters', as they're a form of the 'adapter pattern'. Common stream
-adapters include [`map`], [`take`], and [`filter`].
+那些能接收一个 [`Stream`] 并返回另一个 [`Stream`] 通常被称为 'stream adapters' 流适配器。
+它们是'adapter pattern'适配器模式的形式。常规流适配器包括 [`map`], [`take`], 和 [`filter`]。
 
-Lets update the Mini-Redis so that it will exit. After receiving three messages,
-stop iterating messages. This is done using [`take`]. This adapter limits the
-stream to yield at **most** `n` messages.
+我们来更新 Mini-Redis 先停止它。在收到三条消息后，停止迭代消息。用 [`take`] 实现。这个适配器限制
+这个流以**最多**产出`n`个消息。
 
 ```rust
 # use mini_redis::client;
