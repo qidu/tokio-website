@@ -2,11 +2,9 @@
 title: "Streams"
 ---
 
-A stream is an asynchronous series of values. It is the asynchronous equivalent
-to Rust's [`std::iter::Iterator`][iter] and is represented by the [`Stream`]
-trait. Streams can be iterated in `async` functions. They can also be
-transformed using adapters. Tokio provides a number of common adapters on the
-[`StreamExt`] trait.
+一个流是一系列的异步值。它等同于Rust的[`std::iter::Iterator`][iter]迭代每个异步操作，
+用 [`Stream`] 特性来描述。流可以在 `async` 函数中迭代。它们也能转换成使用装饰器。
+Tokio 在 [`StreamExt`] 特性里提供了许多装饰器。
 
 <!--
 TODO: bring back once true again?
@@ -14,16 +12,15 @@ Tokio provides stream support under the `stream` feature flag. When depending on
 Tokio, include either `stream` or `full` to get access to this functionality.
 -->
 
-Tokio provides stream support in a separate crate: `tokio-stream`.
+Tokio 在独立的 crate `tokio-stream` 中支持流。
 
 ```toml
 tokio-stream = "0.1"
 ```
 
-[[info]]
-| Currently, Tokio's Stream utilities exist in the `tokio-stream` crate.
-| Once the `Stream` trait is stabilized in the Rust standard library, Tokio's
-| stream utilities will be moved into the `tokio` crate.
+> 提示： 
+> 目前 Tokio 的流工具类放在 `tokio-stream` crate 中。一旦 `Stream` 特性在Rust标准库中
+> 稳定后，Tokio 的流工具类也将被移动到 `tokio` crate 中。
 
 <!--
 TODO: uncomment this once it is true again.
@@ -33,11 +30,10 @@ receive half of a [`mpsc::Receiver`][rx] implements [`Stream`]. The
 [`Stream`] where each value represents a line of data.
 -->
 
-# Iteration
+# 迭代器
 
-Currently, the Rust programming language does not support async `for` loops.
-Instead, iterating streams is done using a `while let` loop paired with
-[`StreamExt::next()`][next].
+目前，Rust语言还没支持异步的 `for` 循环。由此我们用`while let`循环和[`StreamExt::next()`][next]
+一起来来迭代流。
 
 ```rust
 use tokio_stream::StreamExt;
@@ -52,15 +48,13 @@ async fn main() {
 }
 ```
 
-Like iterators, the `next()` method returns `Option<T>` where `T` is the
-stream's value type. Receiving `None` indicates that stream iteration is
-terminated.
+像迭代器一样， `next()` 方法返回 `Option<T>` 且 `T` 是流类型值。收到 `None` 暗示流迭代中止。
 
-## Mini-Redis broadcast
+## Mini-Redis 广播
 
-Let's go over a slightly more complicated example using the Mini-Redis client.
+让我们看看一个稍微复杂的例子，用Mini-Redis客户端。
 
-Full code can be found [here][full].
+在 [这里][full] 有完整的代码。
 
 [full]: https://github.com/tokio-rs/website/blob/master/tutorial-code/streams/src/main.rs
 
@@ -111,24 +105,19 @@ async fn main() -> mini_redis::Result<()> {
 # }
 ```
 
-A task is spawned to publish messages to the Mini-Redis server on the "numbers"
-channel. Then, on the main task, we subscribe to the "numbers" channel and
-display received messages.
+一个任务被生成以在 "numbers"键上发送消息到 Mini-Redis 服务端。在mian任务中，我们订阅
+"numbers" 键并展示收到的消息。
 
-After subscribing, [`into_stream()`] is called on the returned subscriber. This
-consumes the `Subscriber`, returning a stream that yields messages as they
-arrive. Before we start iterating the messages, note that the stream is
-[pinned][pin] to the stack using [`tokio::pin!`]. Calling `next()` on a stream
-requires the stream to be [pinned][pin]. The `into_stream()` function returns a
-stream that is *not* pinned, we must explicitly pin it in order to iterate it.
+订阅后，subscriber的[`into_stream()`] 被调用。这使用了 `Subscriber`，并返回一个能产生
+到达消息的流。在我们开始迭代消息前，注意这个流被用[`tokio::pin!`]来[pin住][pin]在栈里。
+在流上调用 `next()`需要它是被[pin住][pin]的。`into_stream()` 函数返回一个**不是**pin住
+的流，为迭代它我们必须显式的pin它。
 
-[[info]]
-| A Rust value is "pinned" when it can no longer be moved in memory. A key
-| property of a pinned value is that pointers can be taken to the pinned
-| data and the caller can be confident the pointer stays valid. This feature
-| is used by `async/await` to support borrowing data across `.await` points.
+> 提示： 
+> Rust值是"pinned"后不能在内存中移动。它的关键属性是指针能指向pinned值，调用者能相信指针
+> 是有效的。这个特征被`async/await` 使用以支持跨`.await`点借用数据。
 
-If we forget to pin the stream, we get an error like this:
+如果我们忘记pin流，将得到如下错误:
 
 ```text
 error[E0277]: `from_generator::GenFuture<[static generator@Subscriber::into_stream::{closure#0} for<'r, 's, 't0, 't1, 't2, 't3, 't4, 't5, 't6> {ResumeTy, &'r mut Subscriber, Subscriber, impl Future, (), std::result::Result<Option<Message>, Box<(dyn std::error::Error + Send + Sync + 't0)>>, Box<(dyn std::error::Error + Send + Sync + 't1)>, &'t2 mut async_stream::yielder::Sender<std::result::Result<Message, Box<(dyn std::error::Error + Send + Sync + 't3)>>>, async_stream::yielder::Sender<std::result::Result<Message, Box<(dyn std::error::Error + Send + Sync + 't4)>>>, std::result::Result<Message, Box<(dyn std::error::Error + Send + Sync + 't5)>>, impl Future, Option<Message>, Message}]>` cannot be unpinned
@@ -148,15 +137,13 @@ error[E0277]: `from_generator::GenFuture<[static generator@Subscriber::into_stre
    = note: required because of the requirements on the impl of `Unpin` for `tokio_stream::take::Take<tokio_stream::map::Map<tokio_stream::filter::Filter<impl Stream, [closure@streams/src/main.rs:22:17: 25:10]>, [closure@streams/src/main.rs:26:14: 26:40]>>`
 ```
 
-If you hit an error message like this, try pinning the value!
-
-Before trying to run this, start the Mini-Redis server:
+如果你遇到一个类似错误，尝试pin值。在运行前，先启动 Mini-Redis 服务器:
 
 ```text
 $ mini-redis-server
 ```
 
-Then try running the code. We will see the messages outputted to STDOUT.
+然后运行例子，我们将在STDOUT上看到如下消息. 
 
 ```text
 got = Ok(Message { channel: "numbers", content: b"1" })
@@ -167,9 +154,8 @@ got = Ok(Message { channel: "numbers", content: b"five" })
 got = Ok(Message { channel: "numbers", content: b"6" })
 ```
 
-Some early messages may be dropped as there is a race between subscribing and
-publishing. The program never exits. A subscription to a Mini-Redis channel
-stays active as long as the server is active.
+有些早的消息可能被丢弃，因为在订阅和发布之间有竞争。这个程序不会退出。一个到 Mini-Redis 管道
+的订阅者将与服务端一样活跃。
 
 Let's see how we can work with streams to expand on this program.
 
