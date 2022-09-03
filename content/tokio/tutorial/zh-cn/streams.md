@@ -330,13 +330,11 @@ impl Stream for Interval {
 
 ## `async-stream` 异步流
 
-Manually implementing streams using the [`Stream`] trait can be tedious.
-Unfortunately, the Rust programming language does not yet support `async/await`
-syntax for defining streams. This is in the works, but not yet ready.
+手动[`Stream`] trait实现streams会很乏味。不幸的是，Rust语言目前不支持定义streams时用
+`async/await`语法。已在准备中，但还没ready。
 
-The [`async-stream`] crate is available as a temporary solution. This crate
-provides a `stream!` macro that transforms the input into a stream. Using
-this crate, the above interval can be implemented like this:
+[`async-stream`] crate 可以作为临时方案。这个crate提供了宏 `stream!` 负责把输入参数转化为stream。
+用这个crate，上面的interval可以这样实现：
 
 ```rust
 use async_stream::stream;
