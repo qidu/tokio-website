@@ -1,22 +1,17 @@
 ---
-title: "Bridging with sync code"
+title: "用异步代码桥接"
 ---
 
-In most examples of using Tokio, we mark the main function with `#[tokio::main]`
-and make the entire project asynchronous.
+在使用Tokio的大多数例子中，我们用 `#[tokio::main]` 标注main函数，使整个项目是异步的。
 
-In some cases, you may need to run a small portion of synchronous code.  For more
-information on that, see [`spawn_blocking`].
+在有些情况，你可能需要运行一小部分同步代码。关于这个的更多代码在 [`spawn_blocking`].
 
-In other cases, it may be easier to structure the application as largely
-synchronous, with smaller or logically distinct asynchronous portions.
-For instance, a GUI application might want to run the GUI code on the
-main thread and run a Tokio runtime next to it on another thread.
+在其他情况，使应用在大层面是同步的，并带有一些小的、特别的异步代码，可以使程序结构更简洁。
+例如，一个GUI应用也许想在main线程中运行GUI代码，在其他线程运行Tokio运行时。
 
-This page explains how you can isolate async/await to a small part of your
-project.
+这页将解释如何将 async/await 隔离到你项目的一个小部分。
 
-# What `#[tokio::main]` expands to
+# `#[tokio::main]` 将扩展为什么
 
 The `#[tokio::main]` macro is a macro that replaces your main function with a
 non-async main function that starts a runtime and then calls your code. For
