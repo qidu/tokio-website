@@ -1,29 +1,23 @@
 ---
-title: "Graceful Shutdown"
+title: "优雅关闭"
 ---
 
-The purpose of this page is to give an overview of how to properly implement
-shutdown in asynchronous applications.
+这页文章的主要目的是，提供一个关于异步程序如何合适地实现退出关闭程序的概览。
 
-There are usually three parts to implementing graceful shutdown:
+有三部分来实现优雅关闭:
 
- * Figuring out when to shut down.
- * Telling every part of the program to shut down.
- * Waiting for other parts of the program to shut down.
+ * 搞清楚何时关闭.
+ * 通知程序的每个模块关闭.
+ * 等待其他部分完成关闭.
 
-The rest of this article will go through these parts. A real world
-implementation of the approach described here can be found in [mini-redis],
-specifically the [`src/server.rs`][server.rs] and
-[`src/shutdown.rs`][shutdown.rs] files.
+本文剩下部分将探讨这三部分。一个真实的关闭方法实现可以在[mini-redis]看到。
+具体在 [`src/server.rs`][server.rs] 和 [`src/shutdown.rs`][shutdown.rs] 两个文件中。
 
-## Figuring out when to shut down
+## 搞清楚何时关闭
 
-This will of course depend on the application, but one very common shutdown
-criteria is when the application receives a signal from the operating system.
-This happens e.g. when you press ctrl+c in the terminal while the program is
-running. To detect this, Tokio provides a [`tokio::signal::ctrl_c`][ctrl_c]
-function, which will sleep until such a signal is received. You might use it
-like this:
+这当然取决于该应用本身。一个普遍的关闭标准是应用收到了操作系统的信号。通常例如当你在终端
+窗口传递ctrl+c给运行中的程序。为检测到这信号，Tokio提供了 [`tokio::signal::ctrl_c`][ctrl_c]
+函数，它将睡眠到有信号收到。你可以这样使用它:
 ```rs
 use tokio::signal;
 
@@ -42,9 +36,9 @@ async fn main() {
     // send shutdown signal to application and wait
 }
 ```
-If you have multiple shutdown conditions, you can use [an mpsc channel] to send
-the shutdown signal to one place. You can then [select] on [`ctrl_c`][ctrl_c]
-and the channel. For example:
+如果你有多个不同的关闭条件，可以使用 [an mpsc channel] 管道来发送关闭信号到一个特定的地方。然后
+[select] 在 [`ctrl_c`][ctrl_c] 和该管道上。例如：
+
 ```rs
 use tokio::signal;
 use tokio::sync::mpsc;
@@ -67,14 +61,12 @@ async fn main() {
 }
 ```
 
-## Telling things to shut down
+## 通知其他模块关闭
 
-The most common tool for telling every part of the application to shut down is
-to use a [broadcast channel][broadcast]. The idea is simple: every task in the
-application has a receiver for the broadcast channel, and when a message is
-broadcast on the channel, the tasks shut themselves down. Usually, receiving
-this broadcast message is implemented using [`tokio::select`][select]. For
-example, in mini-redis each task receives shutdown in this way:
+最常见用来告诉应用的每个部分关闭的工具是 [broadcast channel][broadcast]。它很简单：
+应用中的每个任务都有一个广播管道的接收端，当有广播消息时，每个任务关闭自己。通常用
+[`tokio::select`][select]接收广播消息。例如，在 mini-redis 里每个任务这样接收
+关闭消息：
 ```rs
 let next_frame = tokio::select! {
     res = self.connection.read_frame() => res?,
@@ -85,27 +77,20 @@ let next_frame = tokio::select! {
     }
 };
 ```
-In the case of mini-redis, the task immediately terminates when the shutdown
-message is received, but in some cases you will need to run a shutdown procedure
-before terminating the task. For example, in some cases you need to flush some
-data to a file or database before terminating, or if the task manages a
-connection, you might want to send a shutdown message on the connection.
+在 mini-redis 里，任务在收到关闭消息时立刻退出，但在有些情况下，你将在实际退出前执行一个关闭过程。
+例如，在有些情况，你在退出前需要把数据刷入文件或数据库。如果任务还关联一个连接，你也许要发送关闭信息
+到连接上。
 
-It is usually a good idea to wrap the broadcast channel in a struct. An example
-of this can be found [here][shutdown.rs].
+把广播管道包装在一个struct上通常是个好主意。在 [这里][shutdown.rs] 可以找到例子。
 
-It's worth mentioning that you can do the same thing using a [watch
-channel][watch]. There is no significant difference between the two choices.
+值得一提的是，你可以用 [watch channel][watch] 实现相同功能。这两个选择没有特别大的区别。
 
-## Waiting for things to finish shutting down
+## 等待其他模块完成关闭
 
-Once you have told other tasks to shut down, you will need to wait for them to
-finish. The easiest way to do this is to use [an mpsc channel] where, instead of
-sending messages, you wait for the channel to be closed, which happens when
-every sender has been dropped.
+一旦你通知了其他模块关闭，你需要等待它们完成关闭。最简单的方式是使用 [an mpsc channel]。代替回传通知，
+你只需要等待在这个管道等它关闭，它在发送端丢弃时关闭。
 
-As a simple example of this pattern, the following example will spawn 10 tasks,
-then use an mpsc channel to wait for them to shut down.
+作为这个模式的简单例子，下面的例子中将生成10个任务，然后使用mpsc管道来等待它们关闭。
 ```rs
 use tokio::sync::mpsc::{channel, Sender};
 use tokio::time::{sleep, Duration};
@@ -136,9 +121,8 @@ async fn some_operation(i: u64, _sender: Sender<()>) {
     // sender goes out of scope ...
 }
 ```
-A very important detail is that the task waiting for shutdown usually holds one
-of the senders. When this is the case, you must make sure to drop that sender
-before waiting for the channel to be closed.
+一个非常重要的细节是，等待关闭的任务通常持有管道发送端。这种情况，你必须确保在等待管道关闭前
+丢弃发送端。
 
 [ctrl_c]: https://docs.rs/tokio/1/tokio/signal/fn.ctrl_c.html
 [an mpsc channel]: https://docs.rs/tokio/1/tokio/sync/mpsc/index.html
